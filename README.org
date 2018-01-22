@@ -1,0 +1,2 @@
+Simple specification/implementation of core path resolution, taking
+account of real-world behaviour uncovered by SibylFS.
