@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>path_resolution.ml</title>
+<meta name="generator" content="emacs 25.3.1; htmlfontify 0.21" />
+<style type="text/css"><!-- 
+body { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.default   { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.default a { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.type   { color: #228b22;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.type a { color: #228b22;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.constant   { color: #008b8b;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.constant a { color: #008b8b;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.constructor   { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.constructor a { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.builtin   { color: #483d8b;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.builtin a { color: #483d8b;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.keyword   { color: #a020f0;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.keyword a { color: #a020f0;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.module   { color: #228b22;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.module a { color: #228b22;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.function-name   { color: #0000ff;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.function-name a { color: #0000ff;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.string   { color: #8b2252;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.string a { color: #8b2252;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.operator   { color: #a52a2a;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.operator a { color: #a52a2a;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.variable-name   { color: #a0522d;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.variable-name a { color: #a0522d;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.governing   { color: #000000;  font-weight: 700;  font-family: Ubuntu Mono;  font-stretch: normal;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.governing a { color: #000000;  font-weight: 700;  font-family: Ubuntu Mono;  font-stretch: normal;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.comment   { color: #b22222;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.comment a { color: #b22222;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.comment-delimiter   { color: #b22222;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.comment-delimiter a { color: #b22222;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+ --></style>
+
+    <script type="text/javascript"><!--
+  // this function is needed to work around
+  // a bug in IE related to element attributes
+  function hasClass(obj)
+  {
+      var result = false;
+      if (obj.getAttributeNode("class") != null)
+      {
+          result = obj.getAttributeNode("class").value;
+      }
+      return result;
+  }
+
+  function stripe(id)
+  {
+      // the flag we'll use to keep track of
+      // whether the current row is odd or even
+      var even = false;
+
+      // if arguments are provided to specify the colors
+      // of the even & odd rows, then use the them;
+      // otherwise use the following defaults:
+      var evenColor = arguments[1] ? arguments[1] : "#fff";
+      var oddColor  = arguments[2] ? arguments[2] : "#ddd";
+
+      // obtain a reference to the desired table
+      // if no such table exists, abort
+      var table = document.getElementById(id);
+      if (! table) { return; }
+
+      // by definition, tables can have more than one tbody
+      // element, so we'll have to get the list of child
+      // &lt;tbody&gt;s
+      var tbodies = table.getElementsByTagName("tbody");
+
+      // and iterate through them...
+      for (var h = 0; h < tbodies.length; h++)
+      {
+          // find all the &lt;tr&gt; elements...
+          var trs = tbodies[h].getElementsByTagName("tr");
+
+          // ... and iterate through them
+          for (var i = 0; i < trs.length; i++)
+          {
+              // avoid rows that have a class attribute
+              // or backgroundColor style
+              if (! hasClass(trs[i]) &&
+                  ! trs[i].style.backgroundColor)
+              {
+                  // get all the cells in this row...
+                  var tds = trs[i].getElementsByTagName("td");
+
+                  // and iterate through them...
+                  for (var j = 0; j < tds.length; j++)
+                  {
+                      var mytd = tds[j];
+
+                      // avoid cells that have a class attribute
+                      // or backgroundColor style
+                      if (! hasClass(mytd) &&
+                          ! mytd.style.backgroundColor)
+                      {
+                          mytd.style.backgroundColor =
+                            even ? evenColor : oddColor;
+                      }
+                  }
+              }
+              // flip from odd to even, or vice-versa
+              even =  ! even;
+          }
+      }
+  }
+
+  function toggle_invis( name )
+  {
+      var filter =
+        { acceptNode:
+          function( node )
+          { var classname = node.id;
+            if( classname )
+            { var classbase = classname.substr( 0, name.length );
+              if( classbase == name ) { return NodeFilter.FILTER_ACCEPT; } }
+            return NodeFilter.FILTER_SKIP; } };
+      var walker = document.createTreeWalker( document.body           ,
+                                              NodeFilter.SHOW_ELEMENT ,
+                                              filter                  ,
+                                              false                   );
+      while( walker.nextNode() )
+      {
+          var e = walker.currentNode;
+          if( e.style.display == "none" ) { e.style.display = "inline"; }
+          else                            { e.style.display = "none";   }
+      }
+  }
+--> </script>
+  </head>
+  <body onload="stripe('index'); return true;">
+
+<pre><span class="comment-delimiter">(* </span><span class="comment">Simple prototype of a path resolution algorithm ------------------- </span><span class="comment-delimiter">*)</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">NOTE root is special! Not to be confused with </span><span class="comment">'</span><span class="comment">/</span><span class="comment">'</span><span class="comment"> appearing inside
+   a path </span><span class="comment-delimiter">*)</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">
+
+The SibylFS spec contains a description of path resolution,
+parameterized for all the crazy behavioural differences (especially on
+Mac). 
+
+The following is an attempt to impose a comprehensible structure on
+the real-world messiness. The algorithm below executes a version of
+path resolution which takes account of the weirdnesses in real-world
+behaviour. It is structured so that
+
+- it &quot;naturally&quot; follows some notion of path resolution which is
+  general enough to account for real-world behaviour
+- it makes minimal commitments at each stage
+- it tries to preserve complete information (of course, it drops bits
+  of the path that have resolved uncontroversially)
+- path resolution is broken down into stages
+  - getting the &quot;next&quot; path component
+  - updating the state and returning a result
+  - finally, implementing path resolution recursively
+- small steps are taken!
+- what is happening is clear at each step
+- the code is parameterized over the filesystem implementation
+  (fs_ops)
+
+
+At the moment, we do not take account of MAX_SYMLINK, MAX_PATH
+etc. But these are easy to add.
+
+</span><span class="comment-delimiter">*)</span>
+
+
+<span class="comment-delimiter">(* </span><span class="comment">strings ---------------------------------------------------------- </span><span class="comment-delimiter">*)</span>
+
+<span class="governing">let</span> <span class="variable-name">slash_char</span> <span class="operator">=</span> <span class="string">'</span><span class="string">/</span><span class="string">'</span>
+
+<span class="governing">let</span> <span class="function-name">split_on_first_slash</span><span class="variable-name"> s</span> <span class="operator">=</span>
+  <span class="governing">let</span> <span class="governing">open </span><span class="module">String</span> <span class="governing">in</span>
+  <span class="keyword">match</span> index s slash_char <span class="keyword">with</span>
+  <span class="operator">|</span> <span class="keyword">exception</span> <span class="builtin">Not_found</span> <span class="operator">-&gt;</span> <span class="operator">(</span>s<span class="operator">,</span><span class="constructor">None</span><span class="operator">)</span>
+  <span class="operator">|</span> i <span class="operator">-&gt;</span> <span class="operator">(</span>sub s 0 i<span class="operator">,</span> <span class="constructor">Some</span><span class="operator">(</span>sub s <span class="operator">(</span>i<span class="operator">+</span>1<span class="operator">)</span> <span class="operator">(</span>length s <span class="operator">-</span> <span class="operator">(</span>i<span class="operator">+</span>1<span class="operator">))))</span>
+
+<span class="governing">let</span> <span class="function-name">drop_first_char</span><span class="variable-name"> s</span> <span class="operator">=</span> <span class="module">String.</span>sub s 1 <span class="operator">(</span><span class="module">String.</span>length s <span class="operator">-</span>1<span class="operator">)</span>
+
+<span class="governing">let</span> <span class="function-name">starts_with_slash</span><span class="variable-name"> str</span> <span class="operator">=</span> 
+  <span class="keyword">match</span> str <span class="operator">&lt;&gt;</span><span class="string">&quot;&quot;</span> <span class="operator">&amp;&amp;</span> <span class="module">String.</span>get str 0 <span class="operator">=</span> slash_char <span class="keyword">with</span>
+  <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> <span class="constructor">Some</span> <span class="operator">(</span>drop_first_char str<span class="operator">)</span>
+  <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> <span class="constructor">None</span>
+
+
+<span class="comment-delimiter">(* </span><span class="comment">paths ------------------------------------------------------------ </span><span class="comment-delimiter">*)</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">path_component is a bit lengthy, so call it pname </span><span class="comment-delimiter">*)</span>
+<span class="governing">type</span> <span class="type">pname</span> <span class="operator">=</span> string <span class="comment-delimiter">(* </span><span class="comment">with no slash FIXME enforced? </span><span class="comment-delimiter">*)</span>
+
+
+<span class="comment-delimiter">(* </span><span class="comment">filesystem ------------------------------------------------------- </span><span class="comment-delimiter">*)</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">NOTE the following two types are really private - they can be ints
+   or whathaveyou; for the purposes of easy testing, they are
+   strings </span><span class="comment-delimiter">*)</span>
+<span class="governing">type</span> <span class="type">file_id</span> <span class="operator">=</span> <span class="constructor">Private_file_id</span> <span class="keyword">of</span> string
+<span class="governing">type</span> <span class="type">dir_id</span> <span class="operator">=</span> <span class="constructor">Private_dir_id</span> <span class="keyword">of</span> string
+
+<span class="governing">type</span> <span class="type">resolve_result</span> <span class="operator">=</span> 
+  <span class="operator">|</span> <span class="constructor">File</span> <span class="keyword">of</span> file_id <span class="operator">|</span> <span class="constructor">Dir</span> <span class="keyword">of</span> dir_id <span class="operator">|</span> <span class="constructor">Sym</span> <span class="keyword">of</span> string <span class="operator">|</span> <span class="constructor">Missing</span> 
+
+
+<span class="governing">type</span> <span class="type">fs_ops</span> <span class="operator">=</span> <span class="operator">{</span>
+  root<span class="operator">:</span> dir_id<span class="operator">;</span>
+  resolve_name<span class="operator">:</span> dir_id <span class="operator">-&gt;</span> pname <span class="operator">-&gt;</span> resolve_result
+<span class="operator">}</span>
+
+
+<span class="comment-delimiter">(* </span><span class="comment">path resolution -------------------------------------------------- </span><span class="comment-delimiter">*)</span>
+
+
+<span class="governing">type</span> <span class="type">state</span> <span class="operator">=</span> <span class="operator">{</span>
+  cwd<span class="operator">:</span> dir_id<span class="operator">;</span>
+  is_absolute<span class="operator">:</span> bool<span class="operator">;</span>
+  path<span class="operator">:</span> string<span class="operator">;</span>  
+<span class="operator">}</span>
+
+<span class="governing">let</span> <span class="function-name">is_finished</span><span class="variable-name"> s</span> <span class="operator">=</span> 
+  <span class="operator">not</span> <span class="operator">(</span>s.is_absolute<span class="operator">)</span> <span class="operator">&amp;&amp;</span> <span class="operator">(</span>s.path <span class="operator">=</span> <span class="string">&quot;&quot;</span><span class="operator">)</span>
+
+
+<span class="comment-delimiter">(* </span><span class="comment">if not finished, then there is an Abs or Rel entry at head of
+   paths; Abs get converted into Rels </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="function-name">get_next_comp</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">fs_ops s</span> <span class="operator">=</span> 
+  <span class="keyword">assert</span> <span class="operator">(not</span> <span class="operator">(</span>is_finished s<span class="operator">));</span>
+  <span class="keyword">match</span> s.is_absolute <span class="keyword">with</span>
+  <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> <span class="constructor">`Root</span><span class="operator">,</span> <span class="operator">{</span>s <span class="keyword">with</span> is_absolute<span class="operator">=</span><span class="constant">false</span><span class="operator">}</span>
+  <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span>
+    <span class="comment-delimiter">(* </span><span class="comment">we know that path &lt;&gt; &quot;&quot; </span><span class="comment-delimiter">*)</span>
+    <span class="keyword">assert</span><span class="operator">(</span>s.path <span class="operator">&lt;&gt;</span> <span class="string">&quot;&quot;</span><span class="operator">);</span>
+    split_on_first_slash s.path <span class="operator">|&gt;</span> <span class="keyword">fun</span> <span class="operator">(</span><span class="variable-name">comp</span><span class="operator">,</span><span class="variable-name">rest</span><span class="operator">)</span> <span class="operator">-&gt;</span>
+    <span class="keyword">match</span> rest <span class="keyword">with</span> 
+    <span class="operator">|</span> <span class="constructor">None</span> <span class="operator">-&gt;</span> <span class="constructor">`Finished_no_slash</span> comp<span class="operator">,</span> <span class="operator">{</span>s <span class="keyword">with</span> path<span class="operator">=</span><span class="string">&quot;&quot;</span><span class="operator">}</span>
+    <span class="operator">|</span> <span class="constructor">Some</span> <span class="string">&quot;&quot;</span> <span class="operator">-&gt;</span> <span class="constructor">`Finished_slash</span> comp<span class="operator">,</span> <span class="operator">{</span>s <span class="keyword">with</span> path<span class="operator">=</span><span class="string">&quot;&quot;</span><span class="operator">}</span>
+    <span class="operator">|</span> <span class="constructor">Some</span> rest <span class="operator">-&gt;</span> <span class="constructor">`Comp_with_slash</span> comp<span class="operator">,</span> <span class="operator">{</span>s <span class="keyword">with</span> path<span class="operator">=</span>rest<span class="operator">}</span>
+
+<span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">=</span> get_next_comp
+
+
+<span class="governing">let</span> <span class="function-name">step</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">fs_ops s</span> <span class="operator">=</span>
+  s <span class="operator">|&gt;</span> get_next_comp <span class="operator">~</span>fs_ops <span class="operator">|&gt;</span> <span class="keyword">function</span>
+  <span class="operator">|</span> <span class="constructor">`Root</span><span class="operator">,</span>s <span class="operator">-&gt;</span> <span class="constructor">`Ok</span> <span class="operator">{</span>s <span class="keyword">with</span> cwd<span class="operator">=</span>fs_ops.root<span class="operator">}</span>
+  <span class="operator">|</span> <span class="constructor">`Finished_no_slash</span> c<span class="operator">,</span>s <span class="operator">-&gt;</span> 
+    <span class="comment-delimiter">(* </span><span class="comment">FIXME try and resolve further? No, that is part of the next stage
+       of processing, specific to the syscall involved etc </span><span class="comment-delimiter">*)</span>
+    <span class="constructor">`Finished_no_slash</span> <span class="operator">(</span>c<span class="operator">,</span>s.cwd<span class="operator">)</span>  
+  <span class="operator">|</span> <span class="constructor">`Finished_slash</span> c<span class="operator">,</span>s <span class="operator">-&gt;</span> <span class="constructor">`Finished_slash</span> <span class="operator">(</span>c<span class="operator">,</span>s.cwd<span class="operator">)</span>
+  <span class="operator">|</span> <span class="constructor">`Comp_with_slash</span> c<span class="operator">,</span>s <span class="operator">-&gt;</span> 
+    <span class="comment-delimiter">(* </span><span class="comment">we know there is more to come, but these may just be extra
+       trailing slashes and the current entry may be missing, which is
+       potentially a valid case: /a/b//// where b is a missing target
+       of a dir rename; if this is valid, this is essentially saying
+       that multiple trailing slashes are irrelevant and that a
+       trailing slash can be used to indicate a target that is
+       non-existing and a directory </span><span class="comment-delimiter">*)</span>
+    <span class="comment-delimiter">(* </span><span class="comment">question if &quot;&quot; should be silently ignored, or actually passed to resolve_name </span><span class="comment-delimiter">*)</span>
+    fs_ops.resolve_name s.cwd c <span class="operator">|&gt;</span> <span class="keyword">function</span>
+    <span class="operator">|</span> <span class="constructor">File</span> fid <span class="operator">-&gt;</span> 
+      <span class="comment-delimiter">(* </span><span class="comment">NOTE missing/ is ok if the target is a missing directory </span><span class="comment-delimiter">*)</span>
+      <span class="constructor">`Error</span> <span class="operator">(</span><span class="constructor">`File_followed_by_slash</span> <span class="operator">(</span>s<span class="operator">,</span>c<span class="operator">,</span>fid<span class="operator">))</span>
+    <span class="operator">|</span> <span class="constructor">Dir</span> d <span class="operator">-&gt;</span>
+      <span class="constructor">`Ok</span> <span class="operator">{</span>s <span class="keyword">with</span> cwd<span class="operator">=</span>d<span class="operator">}</span>
+    <span class="operator">|</span> <span class="constructor">Sym</span> str <span class="operator">-&gt;</span> <span class="operator">(</span>
+      <span class="comment-delimiter">(* </span><span class="comment">if name refers to a symlink, but we have a trailing slash (eg
+         a/b/c.txt where b is a symlink), then we need to somehow
+         incorporate this information; and it may even matter whether
+         this trailing slash is considered as part of the symlink
+         resolution, or part of the remaining resolution after the
+         symlink has been resolved; for the moment we assume that any
+         resolution with further path components corresponds to a
+         slash? </span><span class="comment-delimiter">*)</span>
+        <span class="keyword">match</span> starts_with_slash str <span class="keyword">with</span>
+        <span class="operator">|</span> <span class="constructor">Some</span> str' <span class="operator">-&gt;</span> 
+          <span class="constructor">`Ok</span> <span class="operator">{</span> s <span class="keyword">with</span> 
+                is_absolute<span class="operator">=</span><span class="constant">true</span><span class="operator">;</span> 
+                path<span class="operator">=(</span>str'<span class="operator">^</span><span class="string">&quot;/&quot;</span><span class="operator">^</span>s.path<span class="operator">)</span> <span class="operator">}</span>
+        <span class="operator">|</span> <span class="constructor">None</span> <span class="operator">-&gt;</span> 
+          <span class="constructor">`Ok</span> <span class="operator">{</span> s <span class="keyword">with</span>
+                path<span class="operator">=</span>str<span class="operator">^</span><span class="string">&quot;/&quot;</span><span class="operator">^</span>s.path <span class="operator">})</span>
+    <span class="operator">|</span> <span class="constructor">Missing</span> <span class="operator">-&gt;</span> 
+      <span class="comment-delimiter">(* </span><span class="comment">return all that we know; path may be empty, or &quot;//.../&quot; so
+         this could be a valid path </span><span class="comment-delimiter">*)</span>
+      <span class="constructor">`Missing</span><span class="operator">(</span>c<span class="operator">,</span>s<span class="operator">)</span>
+
+<span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">=</span> step
+
+<span class="governing">let</span> <span class="function-name">resolve</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">fs_ops </span><span class="operator">~</span><span class="variable-name">cwd</span> <span class="operator">=</span> 
+  <span class="governing">let</span> <span class="variable-name">step</span> <span class="operator">=</span> step <span class="operator">~</span>fs_ops <span class="governing">in</span>
+  <span class="governing">let</span> <span class="governing">rec</span> <span class="function-name">f</span><span class="variable-name"> s</span> <span class="operator">=</span> 
+    <span class="keyword">assert</span> <span class="operator">(not</span> <span class="operator">(</span>is_finished s<span class="operator">));</span>
+    step s <span class="operator">|&gt;</span> <span class="keyword">function</span>
+    <span class="operator">|</span> <span class="constructor">`Ok</span> s <span class="operator">-&gt;</span> f s
+    <span class="operator">|</span> <span class="constructor">`Finished_no_slash</span> x <span class="operator">-&gt;</span> <span class="constructor">`Finished_no_slash</span> x
+    <span class="operator">|</span> <span class="constructor">`Finished_slash</span> x <span class="operator">-&gt;</span> <span class="constructor">`Finished_slash</span> x
+    <span class="operator">|</span> <span class="constructor">`Error</span> e <span class="operator">-&gt;</span> <span class="constructor">`Error</span> e
+    <span class="operator">|</span> <span class="constructor">`Missing</span> x <span class="operator">-&gt;</span> <span class="constructor">`Missing</span> x
+  <span class="governing">in</span>  
+  <span class="keyword">fun</span> <span class="variable-name">s</span> <span class="operator">-&gt;</span>
+    <span class="keyword">match</span> starts_with_slash s <span class="keyword">with</span>
+    <span class="operator">|</span> <span class="constructor">None</span> <span class="operator">-&gt;</span> f <span class="operator">{</span> cwd<span class="operator">;</span> is_absolute<span class="operator">=</span><span class="constant">false</span><span class="operator">;</span> path<span class="operator">=</span>s <span class="operator">}</span>
+    <span class="operator">|</span> <span class="constructor">Some</span> path <span class="operator">-&gt;</span> f <span class="operator">{</span> cwd<span class="operator">;</span> is_absolute<span class="operator">=</span><span class="constant">true</span><span class="operator">;</span> path <span class="operator">}</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">NOTE that the last component is not resolved; follow_last_symlink
+   etc can be done as another step </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">:</span> <span class="type">
+  </span><span class="constant">fs_ops</span><span class="operator">:</span><span class="type">fs_ops </span><span class="operator">-&gt;</span><span class="type"> </span><span class="constant">cwd</span><span class="operator">:</span><span class="type">dir_id </span><span class="operator">-&gt;</span><span class="type"> string </span><span class="operator">-&gt;</span><span class="type">
+  </span><span class="operator">[&gt;</span><span class="type"> </span><span class="constructor">`Error</span><span class="type"> </span><span class="keyword">of</span><span class="type"> </span><span class="operator">[&gt;</span><span class="type"> </span><span class="constructor">`File_followed_by_slash</span><span class="type"> </span><span class="keyword">of</span><span class="type"> state </span><span class="operator">*</span><span class="type"> pname </span><span class="operator">*</span><span class="type"> file_id </span><span class="operator">]</span><span class="type">
+  </span><span class="operator">|</span><span class="type"> </span><span class="constructor">`Finished_no_slash</span><span class="type"> </span><span class="keyword">of</span><span class="type"> pname </span><span class="operator">*</span><span class="type"> dir_id
+  </span><span class="operator">|</span><span class="type"> </span><span class="constructor">`Finished_slash</span><span class="type"> </span><span class="keyword">of</span><span class="type"> pname </span><span class="operator">*</span><span class="type"> dir_id
+  </span><span class="operator">|</span><span class="type"> </span><span class="constructor">`Missing</span><span class="type"> </span><span class="keyword">of</span><span class="type"> pname </span><span class="operator">*</span><span class="type"> state </span><span class="operator">]</span><span class="type">
+  </span><span class="operator">=</span> resolve
+
+<span class="operator">;;</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">test ------------------------------------------------------------ </span><span class="comment-delimiter">*)</span>
+
+<span class="operator">#</span>require <span class="string">&quot;extunix&quot;</span><span class="operator">;;</span>
+
+<span class="governing">let</span> <span class="variable-name">realpath</span> <span class="operator">=</span> <span class="module">ExtUnixAll.</span>realpath
+
+<span class="comment-delimiter">(* </span><span class="comment">where we run the tests </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="variable-name">root</span> <span class="operator">=</span> realpath <span class="string">&quot;/tmp/l/github/path_resolution/test&quot;</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">test with a filesystem setup as follows (at &quot;root&quot;):
+
+/a/b.txt -&gt; ../c.txt
+/a/d_link -&gt; ../d
+/c.txt
+/d/e.txt
+
+</span><span class="comment-delimiter">*)</span>
+<span class="operator">;;</span>
+
+
+<span class="governing">let</span> <span class="variable-name">fs_ops</span> <span class="operator">=</span> <span class="operator">{</span>
+  root <span class="operator">=</span> <span class="constructor">Private_dir_id</span> root<span class="operator">;</span>
+  resolve_name <span class="operator">=</span> <span class="operator">(</span>
+    <span class="keyword">fun</span> <span class="variable-name">did c</span> <span class="operator">-&gt;</span>
+      <span class="governing">let</span> <span class="governing">open </span><span class="module">Unix</span> <span class="governing">in</span>
+      did <span class="operator">|&gt;</span> <span class="keyword">function</span> <span class="operator">(</span><span class="constructor">Private_dir_id</span> did<span class="operator">)</span> <span class="operator">-&gt;</span>
+      <span class="governing">let</span> <span class="variable-name">path</span> <span class="operator">=</span> <span class="operator">(</span>did<span class="operator">^</span><span class="string">&quot;/&quot;</span><span class="operator">^</span>c<span class="operator">)</span> <span class="governing">in</span>
+        <span class="keyword">match</span> lstat path <span class="keyword">with</span>
+        <span class="operator">|</span> <span class="keyword">exception</span> _ <span class="operator">-&gt;</span> 
+          <span class="comment-delimiter">(* </span><span class="comment">assume not present </span><span class="comment-delimiter">*)</span>
+          <span class="constructor">Missing</span>
+        <span class="operator">|</span> stats <span class="operator">-&gt;</span>
+          <span class="keyword">match</span> stats.st_kind <span class="keyword">with</span>
+          <span class="operator">|</span> <span class="constructor">S_REG</span> <span class="operator">-&gt;</span> <span class="constructor">File</span> <span class="operator">(</span><span class="constructor">Private_file_id</span> path<span class="operator">)</span>
+          <span class="operator">|</span> <span class="constructor">S_DIR</span> <span class="operator">-&gt;</span> 
+            <span class="comment-delimiter">(* </span><span class="comment">FIXME we need to canonicalize paths, but OCaml lacks a
+               native way to do this </span><span class="comment-delimiter">*</span><span class="comment-delimiter">)</span>
+            <span class="constructor">Dir</span> <span class="operator">(</span><span class="constructor">Private_dir_id</span> <span class="operator">(</span>realpath path<span class="operator">))</span> 
+          <span class="operator">|</span> <span class="constructor">S_LNK</span> <span class="operator">-&gt;</span> <span class="constructor">Sym</span> <span class="operator">(</span>readlink path<span class="operator">)</span>
+          <span class="operator">|</span> _ <span class="operator">-&gt;</span> <span class="builtin">failwith</span> <span class="string">&quot;unrecognized type&quot;</span><span class="operator">)</span>
+<span class="operator">}</span>
+
+<span class="governing">let</span> <span class="variable-name">cwd</span> <span class="operator">=</span> <span class="constructor">Private_dir_id</span> root
+
+<span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">=</span> <span class="module">Unix.</span>chdir root
+
+<span class="governing">let</span> <span class="variable-name">resolve</span> <span class="operator">=</span> resolve <span class="operator">~</span>fs_ops <span class="operator">~</span>cwd
+
+<span class="operator">;;</span>
+<span class="governing">let</span> <span class="variable-name">r1</span> <span class="operator">=</span> resolve <span class="string">&quot;/a/b.txt</span><span class="string">&quot;</span><span class="operator">;;</span>
+<span class="governing">let</span> <span class="variable-name">r2</span> <span class="operator">=</span> resolve <span class="string">&quot;/a/d_link</span><span class="string">&quot;</span><span class="operator">;;</span>
+<span class="governing">let</span> <span class="variable-name">r3</span> <span class="operator">=</span> resolve <span class="string">&quot;/a/d_link/</span><span class="string">&quot;</span><span class="operator">;;</span>
+<span class="governing">let</span> <span class="variable-name">r4</span> <span class="operator">=</span> resolve <span class="string">&quot;/a/d_link/e.txt</span><span class="string">&quot;</span><span class="operator">;;</span>
+<span class="governing">let</span> <span class="variable-name">r5</span> <span class="operator">=</span> resolve <span class="string">&quot;/a/d_link/e.txt/</span><span class="string">&quot;</span><span class="operator">;;</span>
+
+<span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">=</span> 
+  <span class="keyword">assert</span> <span class="operator">(</span>r1 <span class="operator">=</span> <span class="constructor">`Finished_no_slash</span> <span class="operator">(</span><span class="string">&quot;b.txt&quot;</span><span class="operator">,</span><span class="constructor">Private_dir_id</span> <span class="operator">(</span>root<span class="operator">^</span><span class="string">&quot;/a&quot;</span><span class="operator">)));</span>
+  <span class="keyword">assert</span> <span class="operator">(</span>r2 <span class="operator">=</span> <span class="constructor">`Finished_no_slash</span> <span class="operator">(</span><span class="string">&quot;d_link&quot;</span><span class="operator">,</span> <span class="constructor">Private_dir_id</span> <span class="operator">(</span>root<span class="operator">^</span><span class="string">&quot;</span><span class="string">/a&quot;</span><span class="operator">)</span><span class="operator">));</span>
+  <span class="keyword">assert</span> <span class="operator">(</span>r3 <span class="operator">=</span> <span class="constructor">`Finished_slash</span> <span class="operator">(</span><span class="string">&quot;d_link&quot;</span><span class="operator">,</span> <span class="constructor">Private_dir_id</span> <span class="operator">(</span>root<span class="operator">^</span><span class="string">&quot;</span><span class="string">/a&quot;</span><span class="operator">)</span><span class="operator">))</span><span class="operator">;</span>
+  <span class="keyword">assert</span> <span class="operator">(</span>r4 <span class="operator">=</span> <span class="constructor">`Finished_no_slash</span> <span class="operator">(</span><span class="string">&quot;</span><span class="string">e</span><span class="string">.</span><span class="string">t</span><span class="string">x</span><span class="string">t</span><span class="string">&quot;</span><span class="operator">,</span> <span class="constructor">Private_dir_id</span> <span class="operator">(</span>root<span class="operator">^</span><span class="string">&quot;</span><span class="string">/</span><span class="string">d</span><span class="string">&quot;</span><span class="operator">)</span><span class="operator">))</span><span class="operator">;</span>
+  <span class="keyword">assert</span> <span class="operator">(</span>r5 <span class="operator">=</span> <span class="constructor">`Finished_slash</span> <span class="operator">(</span><span class="string">&quot;</span><span class="string">e</span><span class="string">.</span><span class="string">t</span><span class="string">x</span><span class="string">t</span><span class="string">&quot;</span><span class="operator">,</span> <span class="constructor">Private_dir_id</span> <span class="operator">(</span>root<span class="operator">^</span><span class="string">&quot;</span><span class="string">/</span><span class="string">d</span><span class="string">&quot;</span><span class="operator">)</span><span class="operator">))</span><span class="operator">;</span>
+  <span class="operator">()</span>
+<span class="operator">;;</span>
+</pre>
+
+ </body>
+</html>
