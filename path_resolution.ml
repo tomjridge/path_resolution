@@ -238,7 +238,11 @@ let resolve ~fs_ops ~follow_last_symlink ~cwd =
               `Finished_slash_symlink (dir,comp,str))
         | Missing -> `Missing_finished_slash(dir,comp))
     | `Error e -> `Error e
-    | `Missing_slash (comp,s) -> `Missing_slash (comp,s)
+    | `Missing_slash (comp,s) -> 
+      (* NOTE that there may well be further stuff to resolve in
+         s.path, likely indicating an error FIXME resolve this? check
+         List.for_all trailing slashes? *)
+      `Missing_slash (comp,s)
   in  
   fun s ->
     match starts_with_slash s with
