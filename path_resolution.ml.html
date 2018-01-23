@@ -365,15 +365,21 @@ should be resolved
         <span class="operator">|</span> <span class="constructor">Dir</span> d <span class="operator">-&gt;</span> <span class="constructor">`Finished_slash_dir</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>d<span class="operator">)</span>
         <span class="operator">|</span> <span class="constructor">Sym</span> str <span class="operator">-&gt;</span> <span class="operator">(</span>
             <span class="comment-delimiter">(* </span><span class="comment">FIXME the following line doesn't hold on all platforms </span><span class="comment-delimiter">*)</span>
-            <span class="governing">let</span> <span class="variable-name">follow_last_symlink</span> <span class="operator">=</span> <span class="constant">true</span> <span class="governing">in</span>
+            <span class="governing">let</span> <span class="variable-name">follow_last_symlink</span> <span class="operator">=</span> <span class="constant">true</span> <span class="governing">in</span>  <span class="comment-delimiter">(* </span><span class="comment">because trailing slash </span><span class="comment-delimiter">*)</span>
             <span class="keyword">match</span> follow_last_symlink <span class="keyword">with</span>
             <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> 
               state_from_symlink <span class="constant">~cwd</span><span class="operator">:</span>dir <span class="constant">~symlink_contents</span><span class="operator">:</span>str <span class="constant">~path</span><span class="operator">:</span><span class="string">&quot;&quot;</span> <span class="operator">|&gt;</span> f
             <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> 
+              <span class="comment-delimiter">(* </span><span class="comment">NOTE this case only occurs if the follow_last_symlink
+                 is false - which may occur on some platforms </span><span class="comment-delimiter">*)</span>
               <span class="constructor">`Finished_slash_symlink</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>str<span class="operator">))</span>
         <span class="operator">|</span> <span class="constructor">Missing</span> <span class="operator">-&gt;</span> <span class="constructor">`Missing_finished_slash</span><span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">))</span>
     <span class="operator">|</span> <span class="constructor">`Error</span> e <span class="operator">-&gt;</span> <span class="constructor">`Error</span> e
-    <span class="operator">|</span> <span class="constructor">`Missing_slash</span> <span class="operator">(</span>comp<span class="operator">,</span>s<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="constructor">`Missing_slash</span> <span class="operator">(</span>comp<span class="operator">,</span>s<span class="operator">)</span>
+    <span class="operator">|</span> <span class="constructor">`Missing_slash</span> <span class="operator">(</span>comp<span class="operator">,</span>s<span class="operator">)</span> <span class="operator">-&gt;</span> 
+      <span class="comment-delimiter">(* </span><span class="comment">NOTE that there may well be further stuff to resolve in
+         s.path, likely indicating an error FIXME resolve this? check
+         List.for_all trailing slashes? </span><span class="comment-delimiter">*)</span>
+      <span class="constructor">`Missing_slash</span> <span class="operator">(</span>comp<span class="operator">,</span>s<span class="operator">)</span>
   <span class="governing">in</span>  
   <span class="keyword">fun</span> <span class="variable-name">s</span> <span class="operator">-&gt;</span>
     <span class="keyword">match</span> starts_with_slash s <span class="keyword">with</span>
