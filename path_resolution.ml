@@ -266,6 +266,43 @@ string ->
  | `Missing_finished_slash of dir_id * comp_ ]
 = resolve
 
+
+(* the above has a lot of cases; we pick out some commonalities to
+   simplify subsequent case splitting *)
+
+module Simplified_result = struct
+  type simplified_result' = File of file_id | Dir of dir_id | Sym of string
+  type simplified_result = 
+    { parent_id: dir_id; comp: comp_; result: simplified_result'; trailing_slash:bool }
+end
+
+
+let resolve_simplified ~fs_ops ~follow_last_symlink ~cwd s = 
+  resolve ~fs_ops ~follow_last_symlink ~cwd s |> function
+  | `Error e -> Error e
+  | `Finished_no_slash_dir (parent_id,comp,did) ->
+    Ok Simplified_result.{ 
+        parent_id; comp; result=(Dir did); trailing_slash=false }
+ | `Finished_no_slash_file (parent_id,comp,fid) -> 
+   Ok Simplified_result.{
+       parent_id; comp; result=(File fid); trailing_slash=false }       
+ | `Finished_no_slash_symlink (parent_id,comp,str) ->
+   Ok Simplified_result.{
+       parent_id; comp; result=(Sym str); trailing_slash=false }       
+ | `Finished_slash_dir (parent_id,comp,did) ->
+   Ok Simplified_result.{ 
+       parent_id; comp; result=(Dir did); trailing_slash=true }
+ | `Finished_slash_file (parent_id,comp,fid) -> 
+   Ok Simplified_result.{
+       parent_id; comp; result=(File fid); trailing_slash=true }
+ | `Finished_slash_symlink (parent_id,comp,str) ->
+   Ok Simplified_result.{
+       parent_id; comp; result=(Sym str); trailing_slash=true }
+ | `Missing_slash of comp_ * state
+ | `Missing_finished_no_slash of dir_id * comp_
+ | `Missing_finished_slash of dir_id * comp_ ]
+
+
 ;;
 
 
