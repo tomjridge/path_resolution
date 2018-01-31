@@ -43,21 +43,42 @@ should be resolved
 
 let slash_char = '/'
 
+
 let split_on_first_slash s =
   let open String in
   match index s slash_char with
   | exception Not_found -> (s,None)
   | i -> (sub s 0 i, Some(sub s (i+1) (length s - (i+1))))
 
-let drop_first_char s = String.sub s 1 (String.length s -1)
+
+let first_char s =
+  assert(s<>"");
+  String.get s 0
+
+
+let drop_first_char s = 
+  assert (s<>"");
+  String.sub s 1 (String.length s -1)
+
 
 let starts_with_slash str = 
-  match str <>"" && String.get str 0 = slash_char with
+  match str <>"" && first_char str = slash_char with
   | true -> Some (drop_first_char str)
   | false -> None
 
 
-(* paths ------------------------------------------------------------ *)
+let string_explode s = 
+  let r = ref [] in
+  String.iter (fun c -> r:=c::!r) s;
+  List.rev !r
+
+
+let all_slashes s = 
+  s |> string_explode |> List.for_all (fun c -> c = slash_char)
+
+
+(* path components -------------------------------------------------- *)
+
 
 (* path_component is a bit lengthy, so call it comp_ *)
 type comp_ = string (* with no slash FIXME enforced? *)
@@ -65,11 +86,13 @@ type comp_ = string (* with no slash FIXME enforced? *)
 
 (* filesystem ------------------------------------------------------- *)
 
+
 (* NOTE the following two types are really private - they can be ints
    or whathaveyou; for the purposes of easy testing, they are
-   strings *)
+   strings FIXME functorize *)
 type file_id = Private_file_id of string
 type dir_id = Private_dir_id of string
+
 
 type resolve_result = 
   | File of file_id | Dir of dir_id | Sym of string | Missing 
@@ -77,13 +100,22 @@ type resolve_result =
 
 type fs_ops = {
   root: dir_id;
-  resolve_name: dir_id -> comp_ -> resolve_result
+  resolve_comp: dir_id -> comp_ -> resolve_result  
 }
+
 
 
 (* path resolution -------------------------------------------------- *)
 
+(* 
 
+During path resolution we maintain a state:
+- cwd, the current directory
+- is_absolute, whether we are working with an absolute path
+- path, the path itself, as a string (but without a leading slash,
+  which is dealt with by is_absolute)
+
+*)
 type state = {
   cwd: dir_id;
   is_absolute: bool;
@@ -95,14 +127,18 @@ let is_finished s =
   not (s.is_absolute) && (s.path = "")
 
 
-(* if name refers to a symlink, but we have a trailing slash (eg
-   a/b/c.txt where b is a symlink), then we need to somehow
-   incorporate this information; and it may even matter whether
-   this trailing slash is considered as part of the symlink
-   resolution, or part of the remaining resolution after the
-   symlink has been resolved; for the moment we assume that any
-   resolution with further path components corresponds to a
-   slash? *)
+(* 
+
+When we encounter a symlink, we need to get the symlink contents (a
+string) and decide what to do next.
+
+If the symlink starts with a slash, then we need to resolve an
+absolute path, otherwise a relative path.
+
+Essentially we then join the contents of the symlink with the
+remainder of the path we are currently processing.
+
+*)
 let state_from_symlink ~cwd ~symlink_contents ~path = 
   let str = symlink_contents in
   match starts_with_slash str with
@@ -117,8 +153,8 @@ let state_from_symlink ~cwd ~symlink_contents ~path =
 
 
 
-(* this deals with strings *)
-let get_next_comp ~fs_ops s = 
+(* Get the next component of the path. This function deals with strings, not state *)
+let get_next_comp s = 
   assert (not (is_finished s));
   match s.is_absolute with
   | true -> `Root, {s with is_absolute=false}
@@ -133,42 +169,67 @@ let get_next_comp ~fs_ops s =
 
 let _ = get_next_comp
 
-(* this interacts with the fs *)
+
+(* Step the path resolution state. This function interacts with the
+   fs. *)
 let step ~fs_ops s =
-  s |> get_next_comp ~fs_ops |> function
+  (* get the next path component *)
+  s |> get_next_comp |> function
+
   | `Root,s -> `Ok {s with cwd=fs_ops.root}
+
   | `Finished_no_slash c,s -> 
-    (* FIXME try and resolve further? No, that is part of the next stage
-       of processing, specific to the syscall involved etc *)
+    (* No more path components left. It may be that the current
+       component refers to a symlink, in which case we need to do more
+       processing. This is dealt with elsewhere. *)
     `Finished_no_slash (c,s.cwd)  
-  | `Finished_slash c,s -> `Finished_slash (c,s.cwd)
+
+  | `Finished_slash c,s -> 
+    (* Again, c may be a symlink *)
+    `Finished_slash (c,s.cwd)
+
   | `Comp_with_slash c,s -> 
-    (* we know there is more to come, but these may just be extra
-       trailing slashes and the current entry may be missing, which is
-       potentially a valid case: /a/b//// where b is a missing target
-       of a dir rename; if this is valid, this is essentially saying
-       that multiple trailing slashes are irrelevant and that a
-       trailing slash can be used to indicate a target that is
-       non-existing and a directory *)
-    (* question if "" should be silently ignored, or actually passed to resolve_name *)
-    fs_ops.resolve_name s.cwd c |> function
+    (* 
+
+We have not finished, so there are more components to process. 
+
+These may just be extra trailing slashes. In addition, the current
+entry may be missing. An example where both happen is: /a/b//// where
+b is a missing target of a dir rename. This case is likely acceptable.
+
+On the other hand we may have a path /a/b/x/y/z, where again b is
+missing. This is likely an error.
+
+NOTE there is the question where "" should be silently ignored, or
+actually passed to fs_ops to resolve
+
+    *)
+    fs_ops.resolve_comp s.cwd c |> function
     | File fid -> 
-      (* NOTE missing/ is ok if the target is a missing directory *)
-      (* NOTE some platforms allow a file to be referred to with a
-         trailing slash *)
+      (* NOTE we have something like f.txt///; this is actually
+         treated as valid on some platforms FIXME add a flag for
+         this *)
       `Error (`File_followed_by_slash (s,c,fid))
-    | Dir d ->
-      `Ok {s with cwd=d}
+
+    | Dir d -> `Ok {s with cwd=d}
+
     | Sym str -> (
+        (* We have something like symlink// or symlink/x/y/z; in the
+           first case, we force the follow of the symlink FIXME some
+           platforms do not do this, so parameterize *)
         `Ok (state_from_symlink ~cwd:s.cwd ~symlink_contents:str ~path:s.path))
     | Missing -> 
-      (* return all that we know; path may be empty, or "//.../" so
-         this could be a valid path *)
+      (* NOTE missing/ is ok if the target is a missing directory *)
+      (* This may or may not be valid. So return all that we know at
+         this point; path may be empty, or eg "///" so this could be a
+         valid path *)
       `Missing_slash(c,s)
 
 let _ = step
 
-(* resolve all but last component *)
+
+(* Resolve all but the last component; not used by the main `resolve`
+   function *)
 let resolve_butlast ~fs_ops ~cwd = 
   let step = step ~fs_ops in
   let rec f s = 
@@ -185,6 +246,7 @@ let resolve_butlast ~fs_ops ~cwd =
     | None -> f { cwd; is_absolute=false; path=s }
     | Some path -> f { cwd; is_absolute=true; path }
 
+
 (* NOTE that the last component is not resolved; follow_last_symlink
    etc can be done as another step *)
 let _ : 
@@ -197,11 +259,18 @@ let _ :
 
 ;;
 
-(* resolve_butlast is cumbersome to use if you want information about
-   the last component, and want to deal with follow_last_symlink; the
-   next piece of code returns info on the last component, but NOTE
-   there are several ways implementations commonly differ in
-   behaviour *)
+(* 
+
+NOTE `resolve_butlast` is cumbersome to use if you want information
+about the last component, and want to deal with `follow_last_symlink`
+(you have to call `resolve_butlast` repeatedly, possibly in
+conjunction with calling fs_ops.resolve_comp).
+
+The next piece of code `resolve` returns info on the last component,
+but NOTE there are several ways implementations commonly differ in
+behaviour
+
+*)
 
 let resolve ~fs_ops ~follow_last_symlink ~cwd = 
   let step = step ~fs_ops in
@@ -209,39 +278,53 @@ let resolve ~fs_ops ~follow_last_symlink ~cwd =
     assert (not (is_finished s));
     step s |> function
     | `Ok s -> f s
+
     | `Finished_no_slash (comp,dir) -> (
-      fs_ops.resolve_name dir comp |> function
-      | File fid -> `Finished_no_slash_file (dir,comp,fid)
-      | Dir d -> `Finished_no_slash_dir (dir,comp,d)
-      | Sym str -> (
-        match follow_last_symlink with
-        | true -> 
-          state_from_symlink ~cwd:dir ~symlink_contents:str ~path:"" |> f
-        | false -> 
-          `Finished_no_slash_symlink (dir,comp,str))
-      | Missing -> `Missing_finished_no_slash(dir,comp))
-    | `Finished_slash (comp,dir) -> (
-        fs_ops.resolve_name dir comp |> function
-        | File fid -> 
-          (* potentially an error *)
-          `Finished_slash_file (dir,comp,fid)
-        | Dir d -> `Finished_slash_dir (dir,comp,d)
+        (* Cases where there is no trailing slash *)
+        fs_ops.resolve_comp dir comp |> function
+        | File fid -> `Finished_no_slash_file (dir,comp,fid)
+        | Dir d -> `Finished_no_slash_dir (dir,comp,d)
         | Sym str -> (
-            (* FIXME the following line doesn't hold on all platforms *)
+            (* A symlink without a trailing slash *)
+            match follow_last_symlink with
+            | true -> 
+              state_from_symlink ~cwd:dir ~symlink_contents:str ~path:"" |> f
+            | false -> 
+              `Finished_no_slash_symlink (dir,comp,str))
+        | Missing -> `Missing_finished_no_slash(dir,comp))
+
+    | `Finished_slash (comp,dir) -> (
+        (* Cases where there is a trailing slash *)
+        fs_ops.resolve_comp dir comp |> function
+        | File fid -> 
+          (* NOTE potentially an error *)
+          `Finished_slash_file (dir,comp,fid)
+
+        | Dir d -> 
+          (* Never (?) an error *)
+          `Finished_slash_dir (dir,comp,d)
+
+        | Sym str -> (
+            (* NOTE there is a trailing slash; FIXME the following
+               line doesn't hold on all platforms; parameterize *)
             let follow_last_symlink = true in  (* because trailing slash *)
             match follow_last_symlink with
             | true -> 
               state_from_symlink ~cwd:dir ~symlink_contents:str ~path:"" |> f
             | false -> 
               (* NOTE this case only occurs if the follow_last_symlink
-                 is false - which may occur on some platforms *)
-              `Finished_slash_symlink (dir,comp,str))
+                 is false - which may occur on some platforms FIXME *)
+              (* `Finished_slash_symlink (dir,comp,str) *)
+              failwith "impossible at the moment")
+
         | Missing -> `Missing_finished_slash(dir,comp))
+
     | `Error e -> `Error e
+
     | `Missing_slash (comp,s) -> 
       (* NOTE that there may well be further stuff to resolve in
-         s.path, likely indicating an error FIXME resolve this? check
-         List.for_all trailing slashes? *)
+         s.path, likely indicating an error; this is dealt with
+         later *)
       `Missing_slash (comp,s)
   in  
   fun s ->
@@ -271,7 +354,7 @@ string ->
    simplify subsequent case splitting *)
 
 module Simplified_result = struct
-  type simplified_result' = File of file_id | Dir of dir_id | Sym of string
+  type simplified_result' = File of file_id | Dir of dir_id | Sym of string | Missing
   type simplified_result = 
     { parent_id: dir_id; comp: comp_; result: simplified_result'; trailing_slash:bool }
 end
@@ -280,28 +363,78 @@ end
 let resolve_simplified ~fs_ops ~follow_last_symlink ~cwd s = 
   resolve ~fs_ops ~follow_last_symlink ~cwd s |> function
   | `Error e -> Error e
-  | `Finished_no_slash_dir (parent_id,comp,did) ->
-    Ok Simplified_result.{ 
-        parent_id; comp; result=(Dir did); trailing_slash=false }
- | `Finished_no_slash_file (parent_id,comp,fid) -> 
-   Ok Simplified_result.{
-       parent_id; comp; result=(File fid); trailing_slash=false }       
- | `Finished_no_slash_symlink (parent_id,comp,str) ->
-   Ok Simplified_result.{
-       parent_id; comp; result=(Sym str); trailing_slash=false }       
- | `Finished_slash_dir (parent_id,comp,did) ->
-   Ok Simplified_result.{ 
-       parent_id; comp; result=(Dir did); trailing_slash=true }
+
+  | `Finished_no_slash_dir (parent_id,comp,did) -> Ok Simplified_result.{ 
+      parent_id; comp; result=(Dir did); trailing_slash=false }
+
+ | `Finished_no_slash_file (parent_id,comp,fid) -> Ok Simplified_result.{
+      parent_id; comp; result=(File fid); trailing_slash=false }       
+
+ | `Finished_no_slash_symlink (parent_id,comp,str) -> Ok Simplified_result.{
+     parent_id; comp; result=(Sym str); trailing_slash=false }       
+
+ | `Finished_slash_dir (parent_id,comp,did) -> Ok Simplified_result.{ 
+     parent_id; comp; result=(Dir did); trailing_slash=true }
+
  | `Finished_slash_file (parent_id,comp,fid) -> 
+   (* NOTE this is often an error FIXME include a further layer to
+      capture these cases? *)
    Ok Simplified_result.{
        parent_id; comp; result=(File fid); trailing_slash=true }
- | `Finished_slash_symlink (parent_id,comp,str) ->
+
+ | `Finished_slash_symlink (parent_id,comp,str) -> 
+   (* NOTE the trailing slash typically forces the symlink to be
+      followed *)
    Ok Simplified_result.{
        parent_id; comp; result=(Sym str); trailing_slash=true }
- | `Missing_slash of comp_ * state
- | `Missing_finished_no_slash of dir_id * comp_
- | `Missing_finished_slash of dir_id * comp_ ]
 
+ | `Missing_slash (comp,s) -> (
+     (*
+
+We have a missing component followed by further stuff in s.path. 
+
+We distinguish between the cases where there are trailing slashes only
+in s.path, and where there is something other than a trailing
+slash.
+
+NOTE there may be other choices here
+
+*)
+
+   assert(s.is_absolute = false);
+   let remaining = s.path in
+   (* check if all slashes *)
+   match all_slashes remaining with
+   | true -> 
+     (* NOTE the component is missing, and the unprocessed path suffix
+        contains only slashes; typically this would represent a target of
+        a rename of a directory, but some platforms allow this for file
+        renames etc; we return an `Ok`, but be aware that this may be an
+        error with some platforms and some syscalls *)
+     Ok Simplified_result.{
+       parent_id=s.cwd; comp; result=Missing; trailing_slash=true }
+
+   | false -> 
+     (* This is an error case eg /a/b/missing/some/more/stuff *)
+     Error (`Missing_slash (comp,s.cwd,remaining)))
+
+ | `Missing_finished_no_slash (parent_id,comp) -> Ok Simplified_result.{
+     parent_id; comp; result=Missing; trailing_slash=false }
+     
+ | `Missing_finished_slash (parent_id,comp) -> Ok Simplified_result.{
+     parent_id; comp; result=Missing; trailing_slash=false }
+
+;;
+
+let _ :
+fs_ops:fs_ops ->
+follow_last_symlink:bool ->
+cwd:dir_id ->
+string ->
+(Simplified_result.simplified_result,
+ [> `File_followed_by_slash of state * comp_ * file_id  (* FIXME clarify further? *)
+  | `Missing_slash of comp_ * dir_id * string ]) result
+= resolve_simplified
 
 ;;
 
@@ -328,7 +461,7 @@ let root = realpath "./test"
 
 let fs_ops = {
   root = Private_dir_id root;
-  resolve_name = (
+  resolve_comp = (
     fun did c ->
       let open Unix in
       did |> function (Private_dir_id did) ->

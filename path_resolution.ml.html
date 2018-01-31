@@ -180,21 +180,42 @@ should be resolved
 
 <span class="governing">let</span> <span class="variable-name">slash_char</span> <span class="operator">=</span> <span class="string">'</span><span class="string">/</span><span class="string">'</span>
 
+
 <span class="governing">let</span> <span class="function-name">split_on_first_slash</span><span class="variable-name"> s</span> <span class="operator">=</span>
   <span class="governing">let</span> <span class="governing">open </span><span class="module">String</span> <span class="governing">in</span>
   <span class="keyword">match</span> index s slash_char <span class="keyword">with</span>
   <span class="operator">|</span> <span class="keyword">exception</span> <span class="builtin">Not_found</span> <span class="operator">-&gt;</span> <span class="operator">(</span>s<span class="operator">,</span><span class="constructor">None</span><span class="operator">)</span>
   <span class="operator">|</span> i <span class="operator">-&gt;</span> <span class="operator">(</span>sub s 0 i<span class="operator">,</span> <span class="constructor">Some</span><span class="operator">(</span>sub s <span class="operator">(</span>i<span class="operator">+</span>1<span class="operator">)</span> <span class="operator">(</span>length s <span class="operator">-</span> <span class="operator">(</span>i<span class="operator">+</span>1<span class="operator">))))</span>
 
-<span class="governing">let</span> <span class="function-name">drop_first_char</span><span class="variable-name"> s</span> <span class="operator">=</span> <span class="module">String.</span>sub s 1 <span class="operator">(</span><span class="module">String.</span>length s <span class="operator">-</span>1<span class="operator">)</span>
+
+<span class="governing">let</span> <span class="function-name">first_char</span><span class="variable-name"> s</span> <span class="operator">=</span>
+  <span class="keyword">assert</span><span class="operator">(</span>s<span class="operator">&lt;&gt;</span><span class="string">&quot;&quot;</span><span class="operator">);</span>
+  <span class="module">String.</span>get s 0
+
+
+<span class="governing">let</span> <span class="function-name">drop_first_char</span><span class="variable-name"> s</span> <span class="operator">=</span> 
+  <span class="keyword">assert</span> <span class="operator">(</span>s<span class="operator">&lt;&gt;</span><span class="string">&quot;&quot;</span><span class="operator">);</span>
+  <span class="module">String.</span>sub s 1 <span class="operator">(</span><span class="module">String.</span>length s <span class="operator">-</span>1<span class="operator">)</span>
+
 
 <span class="governing">let</span> <span class="function-name">starts_with_slash</span><span class="variable-name"> str</span> <span class="operator">=</span> 
-  <span class="keyword">match</span> str <span class="operator">&lt;&gt;</span><span class="string">&quot;&quot;</span> <span class="operator">&amp;&amp;</span> <span class="module">String.</span>get str 0 <span class="operator">=</span> slash_char <span class="keyword">with</span>
+  <span class="keyword">match</span> str <span class="operator">&lt;&gt;</span><span class="string">&quot;&quot;</span> <span class="operator">&amp;&amp;</span> first_char str <span class="operator">=</span> slash_char <span class="keyword">with</span>
   <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> <span class="constructor">Some</span> <span class="operator">(</span>drop_first_char str<span class="operator">)</span>
   <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> <span class="constructor">None</span>
 
 
-<span class="comment-delimiter">(* </span><span class="comment">paths ------------------------------------------------------------ </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="function-name">string_explode</span><span class="variable-name"> s</span> <span class="operator">=</span> 
+  <span class="governing">let</span> <span class="variable-name">r</span> <span class="operator">=</span> <span class="builtin">ref</span> <span class="operator">[]</span> <span class="governing">in</span>
+  <span class="module">String.</span>iter <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">c</span> <span class="operator">-&gt;</span> r<span class="operator">:=</span>c<span class="operator">::!</span>r<span class="operator">)</span> s<span class="operator">;</span>
+  <span class="module">List.</span>rev <span class="operator">!</span>r
+
+
+<span class="governing">let</span> <span class="function-name">all_slashes</span><span class="variable-name"> s</span> <span class="operator">=</span> 
+  s <span class="operator">|&gt;</span> string_explode <span class="operator">|&gt;</span> <span class="module">List.</span>for_all <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">c</span> <span class="operator">-&gt;</span> c <span class="operator">=</span> slash_char<span class="operator">)</span>
+
+
+<span class="comment-delimiter">(* </span><span class="comment">path components -------------------------------------------------- </span><span class="comment-delimiter">*)</span>
+
 
 <span class="comment-delimiter">(* </span><span class="comment">path_component is a bit lengthy, so call it comp_ </span><span class="comment-delimiter">*)</span>
 <span class="governing">type</span> <span class="type">comp_</span> <span class="operator">=</span> string <span class="comment-delimiter">(* </span><span class="comment">with no slash FIXME enforced? </span><span class="comment-delimiter">*)</span>
@@ -202,11 +223,13 @@ should be resolved
 
 <span class="comment-delimiter">(* </span><span class="comment">filesystem ------------------------------------------------------- </span><span class="comment-delimiter">*)</span>
 
+
 <span class="comment-delimiter">(* </span><span class="comment">NOTE the following two types are really private - they can be ints
    or whathaveyou; for the purposes of easy testing, they are
-   strings </span><span class="comment-delimiter">*)</span>
+   strings FIXME functorize </span><span class="comment-delimiter">*)</span>
 <span class="governing">type</span> <span class="type">file_id</span> <span class="operator">=</span> <span class="constructor">Private_file_id</span> <span class="keyword">of</span> string
 <span class="governing">type</span> <span class="type">dir_id</span> <span class="operator">=</span> <span class="constructor">Private_dir_id</span> <span class="keyword">of</span> string
+
 
 <span class="governing">type</span> <span class="type">resolve_result</span> <span class="operator">=</span> 
   <span class="operator">|</span> <span class="constructor">File</span> <span class="keyword">of</span> file_id <span class="operator">|</span> <span class="constructor">Dir</span> <span class="keyword">of</span> dir_id <span class="operator">|</span> <span class="constructor">Sym</span> <span class="keyword">of</span> string <span class="operator">|</span> <span class="constructor">Missing</span> 
@@ -214,13 +237,22 @@ should be resolved
 
 <span class="governing">type</span> <span class="type">fs_ops</span> <span class="operator">=</span> <span class="operator">{</span>
   root<span class="operator">:</span> dir_id<span class="operator">;</span>
-  resolve_name<span class="operator">:</span> dir_id <span class="operator">-&gt;</span> comp_ <span class="operator">-&gt;</span> resolve_result
+  resolve_comp<span class="operator">:</span> dir_id <span class="operator">-&gt;</span> comp_ <span class="operator">-&gt;</span> resolve_result  
 <span class="operator">}</span>
+
 
 
 <span class="comment-delimiter">(* </span><span class="comment">path resolution -------------------------------------------------- </span><span class="comment-delimiter">*)</span>
 
+<span class="comment-delimiter">(* </span><span class="comment">
 
+During path resolution we maintain a state:
+- cwd, the current directory
+- is_absolute, whether we are working with an absolute path
+- path, the path itself, as a string (but without a leading slash,
+  which is dealt with by is_absolute)
+
+</span><span class="comment-delimiter">*)</span>
 <span class="governing">type</span> <span class="type">state</span> <span class="operator">=</span> <span class="operator">{</span>
   cwd<span class="operator">:</span> dir_id<span class="operator">;</span>
   is_absolute<span class="operator">:</span> bool<span class="operator">;</span>
@@ -232,14 +264,18 @@ should be resolved
   <span class="operator">not</span> <span class="operator">(</span>s.is_absolute<span class="operator">)</span> <span class="operator">&amp;&amp;</span> <span class="operator">(</span>s.path <span class="operator">=</span> <span class="string">&quot;&quot;</span><span class="operator">)</span>
 
 
-<span class="comment-delimiter">(* </span><span class="comment">if name refers to a symlink, but we have a trailing slash (eg
-   a/b/c.txt where b is a symlink), then we need to somehow
-   incorporate this information; and it may even matter whether
-   this trailing slash is considered as part of the symlink
-   resolution, or part of the remaining resolution after the
-   symlink has been resolved; for the moment we assume that any
-   resolution with further path components corresponds to a
-   slash? </span><span class="comment-delimiter">*)</span>
+<span class="comment-delimiter">(* </span><span class="comment">
+
+When we encounter a symlink, we need to get the symlink contents (a
+string) and decide what to do next.
+
+If the symlink starts with a slash, then we need to resolve an
+absolute path, otherwise a relative path.
+
+Essentially we then join the contents of the symlink with the
+remainder of the path we are currently processing.
+
+</span><span class="comment-delimiter">*)</span>
 <span class="governing">let</span> <span class="function-name">state_from_symlink</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">cwd </span><span class="operator">~</span><span class="variable-name">symlink_contents </span><span class="operator">~</span><span class="variable-name">path</span> <span class="operator">=</span> 
   <span class="governing">let</span> <span class="variable-name">str</span> <span class="operator">=</span> symlink_contents <span class="governing">in</span>
   <span class="keyword">match</span> starts_with_slash str <span class="keyword">with</span>
@@ -254,8 +290,8 @@ should be resolved
 
 
 
-<span class="comment-delimiter">(* </span><span class="comment">this deals with strings </span><span class="comment-delimiter">*)</span>
-<span class="governing">let</span> <span class="function-name">get_next_comp</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">fs_ops s</span> <span class="operator">=</span> 
+<span class="comment-delimiter">(* </span><span class="comment">Get the next component of the path. This function deals with strings, not state </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="function-name">get_next_comp</span><span class="variable-name"> s</span> <span class="operator">=</span> 
   <span class="keyword">assert</span> <span class="operator">(not</span> <span class="operator">(</span>is_finished s<span class="operator">));</span>
   <span class="keyword">match</span> s.is_absolute <span class="keyword">with</span>
   <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> <span class="constructor">`Root</span><span class="operator">,</span> <span class="operator">{</span>s <span class="keyword">with</span> is_absolute<span class="operator">=</span><span class="constant">false</span><span class="operator">}</span>
@@ -270,42 +306,67 @@ should be resolved
 
 <span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">=</span> get_next_comp
 
-<span class="comment-delimiter">(* </span><span class="comment">this interacts with the fs </span><span class="comment-delimiter">*)</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">Step the path resolution state. This function interacts with the
+   fs. </span><span class="comment-delimiter">*)</span>
 <span class="governing">let</span> <span class="function-name">step</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">fs_ops s</span> <span class="operator">=</span>
-  s <span class="operator">|&gt;</span> get_next_comp <span class="operator">~</span>fs_ops <span class="operator">|&gt;</span> <span class="keyword">function</span>
+  <span class="comment-delimiter">(* </span><span class="comment">get the next path component </span><span class="comment-delimiter">*)</span>
+  s <span class="operator">|&gt;</span> get_next_comp <span class="operator">|&gt;</span> <span class="keyword">function</span>
+
   <span class="operator">|</span> <span class="constructor">`Root</span><span class="operator">,</span>s <span class="operator">-&gt;</span> <span class="constructor">`Ok</span> <span class="operator">{</span>s <span class="keyword">with</span> cwd<span class="operator">=</span>fs_ops.root<span class="operator">}</span>
+
   <span class="operator">|</span> <span class="constructor">`Finished_no_slash</span> c<span class="operator">,</span>s <span class="operator">-&gt;</span> 
-    <span class="comment-delimiter">(* </span><span class="comment">FIXME try and resolve further? No, that is part of the next stage
-       of processing, specific to the syscall involved etc </span><span class="comment-delimiter">*)</span>
+    <span class="comment-delimiter">(* </span><span class="comment">No more path components left. It may be that the current
+       component refers to a symlink, in which case we need to do more
+       processing. This is dealt with elsewhere. </span><span class="comment-delimiter">*)</span>
     <span class="constructor">`Finished_no_slash</span> <span class="operator">(</span>c<span class="operator">,</span>s.cwd<span class="operator">)</span>  
-  <span class="operator">|</span> <span class="constructor">`Finished_slash</span> c<span class="operator">,</span>s <span class="operator">-&gt;</span> <span class="constructor">`Finished_slash</span> <span class="operator">(</span>c<span class="operator">,</span>s.cwd<span class="operator">)</span>
+
+  <span class="operator">|</span> <span class="constructor">`Finished_slash</span> c<span class="operator">,</span>s <span class="operator">-&gt;</span> 
+    <span class="comment-delimiter">(* </span><span class="comment">Again, c may be a symlink </span><span class="comment-delimiter">*)</span>
+    <span class="constructor">`Finished_slash</span> <span class="operator">(</span>c<span class="operator">,</span>s.cwd<span class="operator">)</span>
+
   <span class="operator">|</span> <span class="constructor">`Comp_with_slash</span> c<span class="operator">,</span>s <span class="operator">-&gt;</span> 
-    <span class="comment-delimiter">(* </span><span class="comment">we know there is more to come, but these may just be extra
-       trailing slashes and the current entry may be missing, which is
-       potentially a valid case: /a/b//// where b is a missing target
-       of a dir rename; if this is valid, this is essentially saying
-       that multiple trailing slashes are irrelevant and that a
-       trailing slash can be used to indicate a target that is
-       non-existing and a directory </span><span class="comment-delimiter">*)</span>
-    <span class="comment-delimiter">(* </span><span class="comment">question if &quot;&quot; should be silently ignored, or actually passed to resolve_name </span><span class="comment-delimiter">*)</span>
-    fs_ops.resolve_name s.cwd c <span class="operator">|&gt;</span> <span class="keyword">function</span>
+    <span class="comment-delimiter">(* </span><span class="comment">
+
+We have not finished, so there are more components to process. 
+
+These may just be extra trailing slashes. In addition, the current
+entry may be missing. An example where both happen is: /a/b//// where
+b is a missing target of a dir rename. This case is likely acceptable.
+
+On the other hand we may have a path /a/b/x/y/z, where again b is
+missing. This is likely an error.
+
+NOTE there is the question where &quot;&quot; should be silently ignored, or
+actually passed to fs_ops to resolve
+
+    </span><span class="comment-delimiter">*)</span>
+    fs_ops.resolve_comp s.cwd c <span class="operator">|&gt;</span> <span class="keyword">function</span>
     <span class="operator">|</span> <span class="constructor">File</span> fid <span class="operator">-&gt;</span> 
-      <span class="comment-delimiter">(* </span><span class="comment">NOTE missing/ is ok if the target is a missing directory </span><span class="comment-delimiter">*)</span>
-      <span class="comment-delimiter">(* </span><span class="comment">NOTE some platforms allow a file to be referred to with a
-         trailing slash </span><span class="comment-delimiter">*)</span>
+      <span class="comment-delimiter">(* </span><span class="comment">NOTE we have something like f.txt///; this is actually
+         treated as valid on some platforms FIXME add a flag for
+         this </span><span class="comment-delimiter">*)</span>
       <span class="constructor">`Error</span> <span class="operator">(</span><span class="constructor">`File_followed_by_slash</span> <span class="operator">(</span>s<span class="operator">,</span>c<span class="operator">,</span>fid<span class="operator">))</span>
-    <span class="operator">|</span> <span class="constructor">Dir</span> d <span class="operator">-&gt;</span>
-      <span class="constructor">`Ok</span> <span class="operator">{</span>s <span class="keyword">with</span> cwd<span class="operator">=</span>d<span class="operator">}</span>
+
+    <span class="operator">|</span> <span class="constructor">Dir</span> d <span class="operator">-&gt;</span> <span class="constructor">`Ok</span> <span class="operator">{</span>s <span class="keyword">with</span> cwd<span class="operator">=</span>d<span class="operator">}</span>
+
     <span class="operator">|</span> <span class="constructor">Sym</span> str <span class="operator">-&gt;</span> <span class="operator">(</span>
+        <span class="comment-delimiter">(* </span><span class="comment">We have something like symlink// or symlink/x/y/z; in the
+           first case, we force the follow of the symlink FIXME some
+           platforms do not do this, so parameterize </span><span class="comment-delimiter">*)</span>
         <span class="constructor">`Ok</span> <span class="operator">(</span>state_from_symlink <span class="constant">~cwd</span><span class="operator">:</span>s.cwd <span class="constant">~symlink_contents</span><span class="operator">:</span>str <span class="constant">~path</span><span class="operator">:</span>s.path<span class="operator">))</span>
     <span class="operator">|</span> <span class="constructor">Missing</span> <span class="operator">-&gt;</span> 
-      <span class="comment-delimiter">(* </span><span class="comment">return all that we know; path may be empty, or &quot;//.../&quot; so
-         this could be a valid path </span><span class="comment-delimiter">*)</span>
+      <span class="comment-delimiter">(* </span><span class="comment">NOTE missing/ is ok if the target is a missing directory </span><span class="comment-delimiter">*)</span>
+      <span class="comment-delimiter">(* </span><span class="comment">This may or may not be valid. So return all that we know at
+         this point; path may be empty, or eg &quot;///&quot; so this could be a
+         valid path </span><span class="comment-delimiter">*)</span>
       <span class="constructor">`Missing_slash</span><span class="operator">(</span>c<span class="operator">,</span>s<span class="operator">)</span>
 
 <span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">=</span> step
 
-<span class="comment-delimiter">(* </span><span class="comment">resolve all but last component </span><span class="comment-delimiter">*)</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">Resolve all but the last component; not used by the main `resolve`
+   function </span><span class="comment-delimiter">*)</span>
 <span class="governing">let</span> <span class="function-name">resolve_butlast</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">fs_ops </span><span class="operator">~</span><span class="variable-name">cwd</span> <span class="operator">=</span> 
   <span class="governing">let</span> <span class="variable-name">step</span> <span class="operator">=</span> step <span class="operator">~</span>fs_ops <span class="governing">in</span>
   <span class="governing">let</span> <span class="governing">rec</span> <span class="function-name">f</span><span class="variable-name"> s</span> <span class="operator">=</span> 
@@ -322,6 +383,7 @@ should be resolved
     <span class="operator">|</span> <span class="constructor">None</span> <span class="operator">-&gt;</span> f <span class="operator">{</span> cwd<span class="operator">;</span> is_absolute<span class="operator">=</span><span class="constant">false</span><span class="operator">;</span> path<span class="operator">=</span>s <span class="operator">}</span>
     <span class="operator">|</span> <span class="constructor">Some</span> path <span class="operator">-&gt;</span> f <span class="operator">{</span> cwd<span class="operator">;</span> is_absolute<span class="operator">=</span><span class="constant">true</span><span class="operator">;</span> path <span class="operator">}</span>
 
+
 <span class="comment-delimiter">(* </span><span class="comment">NOTE that the last component is not resolved; follow_last_symlink
    etc can be done as another step </span><span class="comment-delimiter">*)</span>
 <span class="governing">let</span> <span class="function-name">_</span> <span class="operator">:</span> 
@@ -334,11 +396,18 @@ should be resolved
 
 <span class="operator">;;</span>
 
-<span class="comment-delimiter">(* </span><span class="comment">resolve_butlast is cumbersome to use if you want information about
-   the last component, and want to deal with follow_last_symlink; the
-   next piece of code returns info on the last component, but NOTE
-   there are several ways implementations commonly differ in
-   behaviour </span><span class="comment-delimiter">*)</span>
+<span class="comment-delimiter">(* </span><span class="comment">
+
+NOTE `resolve_butlast` is cumbersome to use if you want information
+about the last component, and want to deal with `follow_last_symlink`
+(you have to call `resolve_butlast` repeatedly, possibly in
+conjunction with calling fs_ops.resolve_comp).
+
+The next piece of code `resolve` returns info on the last component,
+but NOTE there are several ways implementations commonly differ in
+behaviour
+
+</span><span class="comment-delimiter">*)</span>
 
 <span class="governing">let</span> <span class="function-name">resolve</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">fs_ops </span><span class="operator">~</span><span class="variable-name">follow_last_symlink </span><span class="operator">~</span><span class="variable-name">cwd</span> <span class="operator">=</span> 
   <span class="governing">let</span> <span class="variable-name">step</span> <span class="operator">=</span> step <span class="operator">~</span>fs_ops <span class="governing">in</span>
@@ -346,39 +415,53 @@ should be resolved
     <span class="keyword">assert</span> <span class="operator">(not</span> <span class="operator">(</span>is_finished s<span class="operator">));</span>
     step s <span class="operator">|&gt;</span> <span class="keyword">function</span>
     <span class="operator">|</span> <span class="constructor">`Ok</span> s <span class="operator">-&gt;</span> f s
+
     <span class="operator">|</span> <span class="constructor">`Finished_no_slash</span> <span class="operator">(</span>comp<span class="operator">,</span>dir<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
-      fs_ops.resolve_name dir comp <span class="operator">|&gt;</span> <span class="keyword">function</span>
-      <span class="operator">|</span> <span class="constructor">File</span> fid <span class="operator">-&gt;</span> <span class="constructor">`Finished_no_slash_file</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>fid<span class="operator">)</span>
-      <span class="operator">|</span> <span class="constructor">Dir</span> d <span class="operator">-&gt;</span> <span class="constructor">`Finished_no_slash_dir</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>d<span class="operator">)</span>
-      <span class="operator">|</span> <span class="constructor">Sym</span> str <span class="operator">-&gt;</span> <span class="operator">(</span>
-        <span class="keyword">match</span> follow_last_symlink <span class="keyword">with</span>
-        <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> 
-          state_from_symlink <span class="constant">~cwd</span><span class="operator">:</span>dir <span class="constant">~symlink_contents</span><span class="operator">:</span>str <span class="constant">~path</span><span class="operator">:</span><span class="string">&quot;&quot;</span> <span class="operator">|&gt;</span> f
-        <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> 
-          <span class="constructor">`Finished_no_slash_symlink</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>str<span class="operator">))</span>
-      <span class="operator">|</span> <span class="constructor">Missing</span> <span class="operator">-&gt;</span> <span class="constructor">`Missing_finished_no_slash</span><span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">))</span>
-    <span class="operator">|</span> <span class="constructor">`Finished_slash</span> <span class="operator">(</span>comp<span class="operator">,</span>dir<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
-        fs_ops.resolve_name dir comp <span class="operator">|&gt;</span> <span class="keyword">function</span>
-        <span class="operator">|</span> <span class="constructor">File</span> fid <span class="operator">-&gt;</span> 
-          <span class="comment-delimiter">(* </span><span class="comment">potentially an error </span><span class="comment-delimiter">*)</span>
-          <span class="constructor">`Finished_slash_file</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>fid<span class="operator">)</span>
-        <span class="operator">|</span> <span class="constructor">Dir</span> d <span class="operator">-&gt;</span> <span class="constructor">`Finished_slash_dir</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>d<span class="operator">)</span>
+        <span class="comment-delimiter">(* </span><span class="comment">Cases where there is no trailing slash </span><span class="comment-delimiter">*)</span>
+        fs_ops.resolve_comp dir comp <span class="operator">|&gt;</span> <span class="keyword">function</span>
+        <span class="operator">|</span> <span class="constructor">File</span> fid <span class="operator">-&gt;</span> <span class="constructor">`Finished_no_slash_file</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>fid<span class="operator">)</span>
+        <span class="operator">|</span> <span class="constructor">Dir</span> d <span class="operator">-&gt;</span> <span class="constructor">`Finished_no_slash_dir</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>d<span class="operator">)</span>
         <span class="operator">|</span> <span class="constructor">Sym</span> str <span class="operator">-&gt;</span> <span class="operator">(</span>
-            <span class="comment-delimiter">(* </span><span class="comment">FIXME the following line doesn't hold on all platforms </span><span class="comment-delimiter">*)</span>
+            <span class="comment-delimiter">(* </span><span class="comment">A symlink without a trailing slash </span><span class="comment-delimiter">*)</span>
+            <span class="keyword">match</span> follow_last_symlink <span class="keyword">with</span>
+            <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> 
+              state_from_symlink <span class="constant">~cwd</span><span class="operator">:</span>dir <span class="constant">~symlink_contents</span><span class="operator">:</span>str <span class="constant">~path</span><span class="operator">:</span><span class="string">&quot;&quot;</span> <span class="operator">|&gt;</span> f
+            <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> 
+              <span class="constructor">`Finished_no_slash_symlink</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>str<span class="operator">))</span>
+        <span class="operator">|</span> <span class="constructor">Missing</span> <span class="operator">-&gt;</span> <span class="constructor">`Missing_finished_no_slash</span><span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">))</span>
+
+    <span class="operator">|</span> <span class="constructor">`Finished_slash</span> <span class="operator">(</span>comp<span class="operator">,</span>dir<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
+        <span class="comment-delimiter">(* </span><span class="comment">Cases where there is a trailing slash </span><span class="comment-delimiter">*)</span>
+        fs_ops.resolve_comp dir comp <span class="operator">|&gt;</span> <span class="keyword">function</span>
+        <span class="operator">|</span> <span class="constructor">File</span> fid <span class="operator">-&gt;</span> 
+          <span class="comment-delimiter">(* </span><span class="comment">NOTE potentially an error </span><span class="comment-delimiter">*)</span>
+          <span class="constructor">`Finished_slash_file</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>fid<span class="operator">)</span>
+
+        <span class="operator">|</span> <span class="constructor">Dir</span> d <span class="operator">-&gt;</span> 
+          <span class="comment-delimiter">(* </span><span class="comment">Never (?) an error </span><span class="comment-delimiter">*)</span>
+          <span class="constructor">`Finished_slash_dir</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>d<span class="operator">)</span>
+
+        <span class="operator">|</span> <span class="constructor">Sym</span> str <span class="operator">-&gt;</span> <span class="operator">(</span>
+            <span class="comment-delimiter">(* </span><span class="comment">NOTE there is a trailing slash; FIXME the following
+               line doesn't hold on all platforms; parameterize </span><span class="comment-delimiter">*)</span>
             <span class="governing">let</span> <span class="variable-name">follow_last_symlink</span> <span class="operator">=</span> <span class="constant">true</span> <span class="governing">in</span>  <span class="comment-delimiter">(* </span><span class="comment">because trailing slash </span><span class="comment-delimiter">*)</span>
             <span class="keyword">match</span> follow_last_symlink <span class="keyword">with</span>
             <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> 
               state_from_symlink <span class="constant">~cwd</span><span class="operator">:</span>dir <span class="constant">~symlink_contents</span><span class="operator">:</span>str <span class="constant">~path</span><span class="operator">:</span><span class="string">&quot;&quot;</span> <span class="operator">|&gt;</span> f
             <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> 
               <span class="comment-delimiter">(* </span><span class="comment">NOTE this case only occurs if the follow_last_symlink
-                 is false - which may occur on some platforms </span><span class="comment-delimiter">*)</span>
-              <span class="constructor">`Finished_slash_symlink</span> <span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">,</span>str<span class="operator">))</span>
+                 is false - which may occur on some platforms FIXME </span><span class="comment-delimiter">*)</span>
+              <span class="comment-delimiter">(* </span><span class="comment">`Finished_slash_symlink (dir,comp,str) </span><span class="comment-delimiter">*)</span>
+              <span class="builtin">failwith</span> <span class="string">&quot;impossible at the moment&quot;</span><span class="operator">)</span>
+
         <span class="operator">|</span> <span class="constructor">Missing</span> <span class="operator">-&gt;</span> <span class="constructor">`Missing_finished_slash</span><span class="operator">(</span>dir<span class="operator">,</span>comp<span class="operator">))</span>
+
     <span class="operator">|</span> <span class="constructor">`Error</span> e <span class="operator">-&gt;</span> <span class="constructor">`Error</span> e
+
     <span class="operator">|</span> <span class="constructor">`Missing_slash</span> <span class="operator">(</span>comp<span class="operator">,</span>s<span class="operator">)</span> <span class="operator">-&gt;</span> 
       <span class="comment-delimiter">(* </span><span class="comment">NOTE that there may well be further stuff to resolve in
-         s.path, likely indicating an error FIXME resolve this? check
-         List.for_all trailing slashes? </span><span class="comment-delimiter">*)</span>
+         s.path, likely indicating an error; this is dealt with
+         later </span><span class="comment-delimiter">*)</span>
       <span class="constructor">`Missing_slash</span> <span class="operator">(</span>comp<span class="operator">,</span>s<span class="operator">)</span>
   <span class="governing">in</span>  
   <span class="keyword">fun</span> <span class="variable-name">s</span> <span class="operator">-&gt;</span>
@@ -402,6 +485,93 @@ string <span class="operator">-&gt;</span>
  <span class="operator">|</span> <span class="constructor">`Missing_finished_no_slash</span> <span class="keyword">of</span> dir_id <span class="operator">*</span> comp_
  <span class="operator">|</span> <span class="constructor">`Missing_finished_slash</span> <span class="keyword">of</span> dir_id <span class="operator">*</span> comp_ <span class="operator">]</span>
 <span class="operator">=</span> resolve
+
+
+<span class="comment-delimiter">(* </span><span class="comment">the above has a lot of cases; we pick out some commonalities to
+   simplify subsequent case splitting </span><span class="comment-delimiter">*)</span>
+
+<span class="governing">module</span> <span class="module">Simplified_result</span> <span class="operator">=</span> <span class="governing">struct</span>
+  <span class="governing">type</span> <span class="type">simplified_result'</span> <span class="operator">=</span> <span class="constructor">File</span> <span class="keyword">of</span> file_id <span class="operator">|</span> <span class="constructor">Dir</span> <span class="keyword">of</span> dir_id <span class="operator">|</span> <span class="constructor">Sym</span> <span class="keyword">of</span> string <span class="operator">|</span> <span class="constructor">Missing</span>
+  <span class="governing">type</span> <span class="type">simplified_result</span> <span class="operator">=</span> 
+    <span class="operator">{</span> parent_id<span class="operator">:</span> dir_id<span class="operator">;</span> comp<span class="operator">:</span> comp_<span class="operator">;</span> result<span class="operator">:</span> simplified_result'<span class="operator">;</span> trailing_slash<span class="operator">:</span>bool <span class="operator">}</span>
+<span class="governing">end</span>
+
+
+<span class="governing">let</span> <span class="function-name">resolve_simplified</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">fs_ops </span><span class="operator">~</span><span class="variable-name">follow_last_symlink </span><span class="operator">~</span><span class="variable-name">cwd s</span> <span class="operator">=</span> 
+  resolve <span class="operator">~</span>fs_ops <span class="operator">~</span>follow_last_symlink <span class="operator">~</span>cwd s <span class="operator">|&gt;</span> <span class="keyword">function</span>
+  <span class="operator">|</span> <span class="constructor">`Error</span> e <span class="operator">-&gt;</span> <span class="constructor">Error</span> e
+
+  <span class="operator">|</span> <span class="constructor">`Finished_no_slash_dir</span> <span class="operator">(</span>parent_id<span class="operator">,</span>comp<span class="operator">,</span>did<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="constructor">Ok</span> <span class="module">Simplified_result.</span><span class="operator">{</span> 
+      parent_id<span class="operator">;</span> comp<span class="operator">;</span> result<span class="operator">=(</span><span class="constructor">Dir</span> did<span class="operator">);</span> trailing_slash<span class="operator">=</span><span class="constant">false</span> <span class="operator">}</span>
+
+ <span class="operator">|</span> <span class="constructor">`Finished_no_slash_file</span> <span class="operator">(</span>parent_id<span class="operator">,</span>comp<span class="operator">,</span>fid<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="constructor">Ok</span> <span class="module">Simplified_result.</span><span class="operator">{</span>
+      parent_id<span class="operator">;</span> comp<span class="operator">;</span> result<span class="operator">=(</span><span class="constructor">File</span> fid<span class="operator">);</span> trailing_slash<span class="operator">=</span><span class="constant">false</span> <span class="operator">}</span>       
+
+ <span class="operator">|</span> <span class="constructor">`Finished_no_slash_symlink</span> <span class="operator">(</span>parent_id<span class="operator">,</span>comp<span class="operator">,</span>str<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="constructor">Ok</span> <span class="module">Simplified_result.</span><span class="operator">{</span>
+     parent_id<span class="operator">;</span> comp<span class="operator">;</span> result<span class="operator">=(</span><span class="constructor">Sym</span> str<span class="operator">);</span> trailing_slash<span class="operator">=</span><span class="constant">false</span> <span class="operator">}</span>       
+
+ <span class="operator">|</span> <span class="constructor">`Finished_slash_dir</span> <span class="operator">(</span>parent_id<span class="operator">,</span>comp<span class="operator">,</span>did<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="constructor">Ok</span> <span class="module">Simplified_result.</span><span class="operator">{</span> 
+     parent_id<span class="operator">;</span> comp<span class="operator">;</span> result<span class="operator">=(</span><span class="constructor">Dir</span> did<span class="operator">);</span> trailing_slash<span class="operator">=</span><span class="constant">true</span> <span class="operator">}</span>
+
+ <span class="operator">|</span> <span class="constructor">`Finished_slash_file</span> <span class="operator">(</span>parent_id<span class="operator">,</span>comp<span class="operator">,</span>fid<span class="operator">)</span> <span class="operator">-&gt;</span> 
+   <span class="comment-delimiter">(* </span><span class="comment">NOTE this is often an error FIXME include a further layer to
+      capture these cases? </span><span class="comment-delimiter">*)</span>
+   <span class="constructor">Ok</span> <span class="module">Simplified_result.</span><span class="operator">{</span>
+       parent_id<span class="operator">;</span> comp<span class="operator">;</span> result<span class="operator">=(</span><span class="constructor">File</span> fid<span class="operator">);</span> trailing_slash<span class="operator">=</span><span class="constant">true</span> <span class="operator">}</span>
+
+ <span class="operator">|</span> <span class="constructor">`Finished_slash_symlink</span> <span class="operator">(</span>parent_id<span class="operator">,</span>comp<span class="operator">,</span>str<span class="operator">)</span> <span class="operator">-&gt;</span> 
+   <span class="comment-delimiter">(* </span><span class="comment">NOTE the trailing slash typically forces the symlink to be
+      followed </span><span class="comment-delimiter">*)</span>
+   <span class="constructor">Ok</span> <span class="module">Simplified_result.</span><span class="operator">{</span>
+       parent_id<span class="operator">;</span> comp<span class="operator">;</span> result<span class="operator">=(</span><span class="constructor">Sym</span> str<span class="operator">);</span> trailing_slash<span class="operator">=</span><span class="constant">true</span> <span class="operator">}</span>
+
+ <span class="operator">|</span> <span class="constructor">`Missing_slash</span> <span class="operator">(</span>comp<span class="operator">,</span>s<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
+     <span class="comment-delimiter">(*</span><span class="comment">
+
+We have a missing component followed by further stuff in s.path. 
+
+We distinguish between the cases where there are trailing slashes only
+in s.path, and where there is something other than a trailing
+slash.
+
+NOTE there may be other choices here
+
+</span><span class="comment-delimiter">*)</span>
+
+   <span class="keyword">assert</span><span class="operator">(</span>s.is_absolute <span class="operator">=</span> <span class="constant">false</span><span class="operator">);</span>
+   <span class="governing">let</span> <span class="variable-name">remaining</span> <span class="operator">=</span> s.path <span class="governing">in</span>
+   <span class="comment-delimiter">(* </span><span class="comment">check if all slashes </span><span class="comment-delimiter">*)</span>
+   <span class="keyword">match</span> all_slashes remaining <span class="keyword">with</span>
+   <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> 
+     <span class="comment-delimiter">(* </span><span class="comment">NOTE the component is missing, and the unprocessed path suffix
+        contains only slashes; typically this would represent a target of
+        a rename of a directory, but some platforms allow this for file
+        renames etc; we return an `Ok`, but be aware that this may be an
+        error with some platforms and some syscalls </span><span class="comment-delimiter">*)</span>
+     <span class="constructor">Ok</span> <span class="module">Simplified_result.</span><span class="operator">{</span>
+       parent_id<span class="operator">=</span>s.cwd<span class="operator">;</span> comp<span class="operator">;</span> result<span class="operator">=</span><span class="constructor">Missing</span><span class="operator">;</span> trailing_slash<span class="operator">=</span><span class="constant">true</span> <span class="operator">}</span>
+
+   <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> 
+     <span class="comment-delimiter">(* </span><span class="comment">This is an error case eg /a/b/missing/some/more/stuff </span><span class="comment-delimiter">*)</span>
+     <span class="constructor">Error</span> <span class="operator">(</span><span class="constructor">`Missing_slash</span> <span class="operator">(</span>comp<span class="operator">,</span>s.cwd<span class="operator">,</span>remaining<span class="operator">)))</span>
+
+ <span class="operator">|</span> <span class="constructor">`Missing_finished_no_slash</span> <span class="operator">(</span>parent_id<span class="operator">,</span>comp<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="constructor">Ok</span> <span class="module">Simplified_result.</span><span class="operator">{</span>
+     parent_id<span class="operator">;</span> comp<span class="operator">;</span> result<span class="operator">=</span><span class="constructor">Missing</span><span class="operator">;</span> trailing_slash<span class="operator">=</span><span class="constant">false</span> <span class="operator">}</span>
+     
+ <span class="operator">|</span> <span class="constructor">`Missing_finished_slash</span> <span class="operator">(</span>parent_id<span class="operator">,</span>comp<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="constructor">Ok</span> <span class="module">Simplified_result.</span><span class="operator">{</span>
+     parent_id<span class="operator">;</span> comp<span class="operator">;</span> result<span class="operator">=</span><span class="constructor">Missing</span><span class="operator">;</span> trailing_slash<span class="operator">=</span><span class="constant">false</span> <span class="operator">}</span>
+
+<span class="operator">;;</span>
+
+<span class="governing">let</span> <span class="function-name">_</span> <span class="operator">:</span>
+<span class="constant">fs_ops</span><span class="operator">:</span>fs_ops <span class="operator">-&gt;</span>
+<span class="constant">follow_last_symlink</span><span class="operator">:</span>bool <span class="operator">-&gt;</span>
+<span class="constant">cwd</span><span class="operator">:</span>dir_id <span class="operator">-&gt;</span>
+string <span class="operator">-&gt;</span>
+<span class="operator">(</span><span class="module">Simplified_result.</span>simplified_result<span class="operator">,</span>
+ <span class="operator">[&gt;</span> <span class="constructor">`File_followed_by_slash</span> <span class="keyword">of</span> state <span class="operator">*</span> comp_ <span class="operator">*</span> file_id  <span class="comment-delimiter">(* </span><span class="comment">FIXME clarify further? </span><span class="comment-delimiter">*)</span>
+  <span class="operator">|</span> <span class="constructor">`Missing_slash</span> <span class="keyword">of</span> comp_ <span class="operator">*</span> dir_id <span class="operator">*</span> string <span class="operator">])</span> result
+<span class="operator">=</span> resolve_simplified
 
 <span class="operator">;;</span>
 
@@ -428,7 +598,7 @@ string <span class="operator">-&gt;</span>
 
 <span class="governing">let</span> <span class="variable-name">fs_ops</span> <span class="operator">=</span> <span class="operator">{</span>
   root <span class="operator">=</span> <span class="constructor">Private_dir_id</span> root<span class="operator">;</span>
-  resolve_name <span class="operator">=</span> <span class="operator">(</span>
+  resolve_comp <span class="operator">=</span> <span class="operator">(</span>
     <span class="keyword">fun</span> <span class="variable-name">did c</span> <span class="operator">-&gt;</span>
       <span class="governing">let</span> <span class="governing">open </span><span class="module">Unix</span> <span class="governing">in</span>
       did <span class="operator">|&gt;</span> <span class="keyword">function</span> <span class="operator">(</span><span class="constructor">Private_dir_id</span> did<span class="operator">)</span> <span class="operator">-&gt;</span>
