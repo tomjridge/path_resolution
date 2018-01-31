@@ -173,6 +173,15 @@ NOTE one of the problems is the overloading of </span><span class="comment">'</s
 separator, the root (not so bad) and an indicator that a symlink
 should be resolved
 
+TODO:
+
+- add MAX_SYMLINK and MAX_PATH
+
+- construct a unix/windows path compatibility library based on this
+  code
+
+- add testing and code coverage
+
 </span><span class="comment-delimiter">*)</span>
 
 
@@ -565,7 +574,7 @@ NOTE there may be other choices here
 
 <span class="governing">let</span> <span class="function-name">_</span> <span class="operator">:</span>
 <span class="constant">fs_ops</span><span class="operator">:</span>fs_ops <span class="operator">-&gt;</span>
-<span class="constant">follow_last_symlink</span><span class="operator">:</span>bool <span class="operator">-&gt;</span>
+follow_last_symlink<span class="operator">:</span>bool <span class="operator">-&gt;</span>
 <span class="constant">cwd</span><span class="operator">:</span>dir_id <span class="operator">-&gt;</span>
 string <span class="operator">-&gt;</span>
 <span class="operator">(</span><span class="module">Simplified_result.</span>simplified_result<span class="operator">,</span>

@@ -36,6 +36,15 @@ NOTE one of the problems is the overloading of '/' as a component
 separator, the root (not so bad) and an indicator that a symlink
 should be resolved
 
+TODO:
+
+- add MAX_SYMLINK and MAX_PATH
+
+- construct a unix/windows path compatibility library based on this
+  code
+
+- add testing and code coverage
+
 *)
 
 
