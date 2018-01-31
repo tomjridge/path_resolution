@@ -45,6 +45,9 @@ TODO:
 
 - add testing and code coverage
 
+- test this code against SibylFS model and real-world traces; replace
+  SibylFS model with this one
+
 *)
 
 
@@ -96,20 +99,27 @@ type comp_ = string (* with no slash FIXME enforced? *)
 (* filesystem ------------------------------------------------------- *)
 
 
-(* NOTE the following two types are really private - they can be ints
-   or whathaveyou; for the purposes of easy testing, they are
-   strings FIXME functorize *)
+(* 
+
+NOTE the following two types are really private - they can be ints
+or whathaveyou; for the purposes of easy testing, they are
+strings 
+
+To avoid functorization, we use type vars
+
+*)
+(*
 type file_id = Private_file_id of string
 type dir_id = Private_dir_id of string
+*)
+
+type ('file_id,'dir_id) resolve_result = 
+  | File of 'file_id | Dir of 'dir_id | Sym of string | Missing 
 
 
-type resolve_result = 
-  | File of file_id | Dir of dir_id | Sym of string | Missing 
-
-
-type fs_ops = {
-  root: dir_id;
-  resolve_comp: dir_id -> comp_ -> resolve_result  
+type ('file_id,'dir_id) fs_ops = {
+  root: 'dir_id;
+  resolve_comp: 'dir_id -> comp_ -> ('file_id,'dir_id) resolve_result  
 }
 
 
@@ -125,8 +135,8 @@ During path resolution we maintain a state:
   which is dealt with by is_absolute)
 
 *)
-type state = {
-  cwd: dir_id;
+type 'dir_id state = {
+  cwd: 'dir_id;
   is_absolute: bool;
   path: string;  
 }
@@ -259,11 +269,11 @@ let resolve_butlast ~fs_ops ~cwd =
 (* NOTE that the last component is not resolved; follow_last_symlink
    etc can be done as another step *)
 let _ : 
-  fs_ops:fs_ops -> cwd:dir_id -> string ->
-  [> `Error of [> `File_followed_by_slash of state * comp_ * file_id ]
-  | `Finished_no_slash of comp_ * dir_id
-  | `Finished_slash of comp_ * dir_id
-  | `Missing_slash of comp_ * state ]
+  fs_ops: ('file_id,'dir_id) fs_ops -> cwd:'dir_id -> string ->
+  [> `Error of [> `File_followed_by_slash of 'dir_id state * comp_ * 'file_id ]
+  | `Finished_no_slash of comp_ * 'dir_id
+  | `Finished_slash of comp_ * 'dir_id
+  | `Missing_slash of comp_ * 'dir_id state ]
   = resolve_butlast
 
 ;;
@@ -342,20 +352,20 @@ let resolve ~fs_ops ~follow_last_symlink ~cwd =
     | Some path -> f { cwd; is_absolute=true; path }
 
 let _ : 
-fs_ops:fs_ops ->
+fs_ops: ('file_id,'dir_id) fs_ops ->
 follow_last_symlink:bool ->
-cwd:dir_id ->
+cwd:'dir_id ->
 string ->
-[> `Error of [> `File_followed_by_slash of state * comp_ * file_id ]
- | `Finished_no_slash_dir of dir_id * comp_ * dir_id
- | `Finished_no_slash_file of dir_id * comp_ * file_id
- | `Finished_no_slash_symlink of dir_id * comp_ * string
- | `Finished_slash_dir of dir_id * comp_ * dir_id
- | `Finished_slash_file of dir_id * comp_ * file_id
- | `Finished_slash_symlink of dir_id * comp_ * string
- | `Missing_slash of comp_ * state
- | `Missing_finished_no_slash of dir_id * comp_
- | `Missing_finished_slash of dir_id * comp_ ]
+[> `Error of [> `File_followed_by_slash of 'dir_id state * comp_ * 'file_id ]
+ | `Finished_no_slash_dir of 'dir_id * comp_ * 'dir_id
+ | `Finished_no_slash_file of 'dir_id * comp_ * 'file_id
+ | `Finished_no_slash_symlink of 'dir_id * comp_ * string
+ | `Finished_slash_dir of 'dir_id * comp_ * 'dir_id
+ | `Finished_slash_file of 'dir_id * comp_ * 'file_id
+ | `Finished_slash_symlink of 'dir_id * comp_ * string
+ | `Missing_slash of comp_ * 'dir_id state
+ | `Missing_finished_no_slash of 'dir_id * comp_
+ | `Missing_finished_slash of 'dir_id * comp_ ]
 = resolve
 
 
@@ -363,9 +373,9 @@ string ->
    simplify subsequent case splitting *)
 
 module Simplified_result = struct
-  type simplified_result' = File of file_id | Dir of dir_id | Sym of string | Missing
-  type simplified_result = 
-    { parent_id: dir_id; comp: comp_; result: simplified_result'; trailing_slash:bool }
+  type ('file_id,'dir_id) simplified_result' = File of 'file_id | Dir of 'dir_id | Sym of string | Missing
+  type ('file_id,'dir_id) simplified_result = 
+    { parent_id: 'dir_id; comp: comp_; result: ('file_id,'dir_id) simplified_result'; trailing_slash:bool }
 end
 
 
@@ -436,13 +446,13 @@ NOTE there may be other choices here
 ;;
 
 let _ :
-fs_ops:fs_ops ->
+fs_ops:('file_id,'dir_id) fs_ops ->
 follow_last_symlink:bool ->
-cwd:dir_id ->
+cwd:'dir_id ->
 string ->
-(Simplified_result.simplified_result,
- [> `File_followed_by_slash of state * comp_ * file_id  (* FIXME clarify further? *)
-  | `Missing_slash of comp_ * dir_id * string ]) result
+(('file_id,'dir_id) Simplified_result.simplified_result,
+ [> `File_followed_by_slash of 'dir_id state * comp_ * 'file_id  (* FIXME clarify further? *)
+  | `Missing_slash of comp_ * 'dir_id * string ]) result
 = resolve_simplified
 
 ;;
@@ -451,6 +461,9 @@ string ->
 (* test ------------------------------------------------------------ *)
 
 #require "extunix";;
+
+type file_id = Private_file_id of string
+type dir_id = Private_dir_id of string
 
 let realpath = ExtUnixAll.realpath
 
