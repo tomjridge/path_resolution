@@ -10,7 +10,7 @@ let realpath = ExtUnixAll.realpath
 let old_cwd = Unix.getcwd()
 
 (* where we run the tests; note this assumes we start in the directory containing root *)
-let root = realpath "./test"
+let root = realpath "."
 
 let _ = Unix.chdir root
 
@@ -73,3 +73,5 @@ let _ =
 let _ = Unix.chdir old_cwd
 
 ;;
+
+let _ = print_endline "Tests passed"
