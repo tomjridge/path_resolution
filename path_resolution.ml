@@ -51,78 +51,9 @@ TODO:
 *)
 
 
-(* strings ---------------------------------------------------------- *)
-
-let slash_char = '/'
-
-
-let split_on_first_slash s =
-  let open String in
-  match index s slash_char with
-  | exception Not_found -> (s,None)
-  | i -> (sub s 0 i, Some(sub s (i+1) (length s - (i+1))))
-
-
-let first_char s =
-  assert(s<>"");
-  String.get s 0
-
-
-let drop_first_char s = 
-  assert (s<>"");
-  String.sub s 1 (String.length s -1)
-
-
-let starts_with_slash str = 
-  match str <>"" && first_char str = slash_char with
-  | true -> Some (drop_first_char str)
-  | false -> None
-
-
-let string_explode s = 
-  let r = ref [] in
-  String.iter (fun c -> r:=c::!r) s;
-  List.rev !r
-
-
-let all_slashes s = 
-  s |> string_explode |> List.for_all (fun c -> c = slash_char)
-
-
-(* path components -------------------------------------------------- *)
-
-
-(* path_component is a bit lengthy, so call it comp_ *)
-type comp_ = string (* with no slash FIXME enforced? *)
-
-
-(* filesystem ------------------------------------------------------- *)
-
-
-(* 
-
-NOTE the following two types are really private - they can be ints
-or whathaveyou; for the purposes of easy testing, they are
-strings 
-
-To avoid functorization, we use type vars
-
-*)
-(*
-type file_id = Private_file_id of string
-type dir_id = Private_dir_id of string
-*)
-
-type ('file_id,'dir_id) resolve_result = 
-  | File of 'file_id | Dir of 'dir_id | Sym of string | Missing 
-
-
-type ('file_id,'dir_id) fs_ops = {
-  root: 'dir_id;
-  resolve_comp: 'dir_id -> comp_ -> ('file_id,'dir_id) resolve_result  
-}
-
-
+open String_util
+open Path_component
+open Fs_ops
 
 (* path resolution -------------------------------------------------- *)
 
@@ -225,10 +156,11 @@ actually passed to fs_ops to resolve
     *)
     fs_ops.resolve_comp s.cwd c |> function
     | File fid -> 
-      (* NOTE we have something like f.txt///; this is actually
-         treated as valid on some platforms FIXME add a flag for
-         this *)
-      `Error (`File_followed_by_slash (s,c,fid))
+      (* NOTE we have something like f.txt/// or f.txt/a/b; f.txt/ is
+         actually treated as valid on some platforms, especially if
+         f.txt is a symlink to a file, so that the trailing slash
+         means "follow symlink" FIXME add a flag for this *)
+      `Error (`File_followed_by_slash_etc (s,c,fid))
 
     | Dir d -> `Ok {s with cwd=d}
 
@@ -270,7 +202,7 @@ let resolve_butlast ~fs_ops ~cwd =
    etc can be done as another step *)
 let _ : 
   fs_ops: ('file_id,'dir_id) fs_ops -> cwd:'dir_id -> string ->
-  [> `Error of [> `File_followed_by_slash of 'dir_id state * comp_ * 'file_id ]
+  [> `Error of [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id ]
   | `Finished_no_slash of comp_ * 'dir_id
   | `Finished_slash of comp_ * 'dir_id
   | `Missing_slash of comp_ * 'dir_id state ]
@@ -356,7 +288,7 @@ fs_ops: ('file_id,'dir_id) fs_ops ->
 follow_last_symlink:bool ->
 cwd:'dir_id ->
 string ->
-[> `Error of [> `File_followed_by_slash of 'dir_id state * comp_ * 'file_id ]
+[> `Error of [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id ]
  | `Finished_no_slash_dir of 'dir_id * comp_ * 'dir_id
  | `Finished_no_slash_file of 'dir_id * comp_ * 'file_id
  | `Finished_no_slash_symlink of 'dir_id * comp_ * string
@@ -377,7 +309,7 @@ module Simplified_result = struct
   type ('file_id,'dir_id) simplified_result = 
     { parent_id: 'dir_id; comp: comp_; result: ('file_id,'dir_id) simplified_result'; trailing_slash:bool }
 end
-
+include Simplified_result
 
 let resolve_simplified ~fs_ops ~follow_last_symlink ~cwd s = 
   resolve ~fs_ops ~follow_last_symlink ~cwd s |> function
@@ -451,76 +383,10 @@ follow_last_symlink:bool ->
 cwd:'dir_id ->
 string ->
 (('file_id,'dir_id) Simplified_result.simplified_result,
- [> `File_followed_by_slash of 'dir_id state * comp_ * 'file_id  (* FIXME clarify further? *)
+ [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id  (* FIXME clarify further? *)
   | `Missing_slash of comp_ * 'dir_id * string ]) result
 = resolve_simplified
 
 ;;
 
 
-(* test ------------------------------------------------------------ *)
-
-#require "extunix";;
-
-type file_id = Private_file_id of string
-type dir_id = Private_dir_id of string
-
-let realpath = ExtUnixAll.realpath
-
-(* where we run the tests *)
-let root = realpath "./test"
-
-(* test with a filesystem setup as follows (at "root"):
-
-/a/b.txt -> ../c.txt
-/a/d_link -> ../d
-/c.txt
-/d/e.txt
-
-*)
-;;
-
-
-let fs_ops = {
-  root = Private_dir_id root;
-  resolve_comp = (
-    fun did c ->
-      let open Unix in
-      did |> function (Private_dir_id did) ->
-      let path = (did^"/"^c) in
-        match lstat path with
-        | exception _ -> 
-          (* assume not present *)
-          Missing
-        | stats ->
-          match stats.st_kind with
-          | S_REG -> File (Private_file_id path)
-          | S_DIR -> 
-            (* FIXME we need to canonicalize paths, but OCaml lacks a
-               native way to do this *)
-            Dir (Private_dir_id (realpath path)) 
-          | S_LNK -> Sym (readlink path)
-          | _ -> failwith "unrecognized type")
-}
-
-let cwd = Private_dir_id root
-
-let _ = Unix.chdir root
-
-let resolve = resolve_butlast ~fs_ops ~cwd
-
-;;
-let r1 = resolve "/a/b.txt";;
-let r2 = resolve "/a/d_link";;
-let r3 = resolve "/a/d_link/";;
-let r4 = resolve "/a/d_link/e.txt";;
-let r5 = resolve "/a/d_link/e.txt/";;
-
-let _ = 
-  assert (r1 = `Finished_no_slash ("b.txt",Private_dir_id (root^"/a")));
-  assert (r2 = `Finished_no_slash ("d_link", Private_dir_id (root^"/a")));
-  assert (r3 = `Finished_slash ("d_link", Private_dir_id (root^"/a")));
-  assert (r4 = `Finished_no_slash ("e.txt", Private_dir_id (root^"/d")));
-  assert (r5 = `Finished_slash ("e.txt", Private_dir_id (root^"/d")));
-  ()
-;;
