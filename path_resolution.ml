@@ -367,7 +367,7 @@ NOTE there may be other choices here
 
    | false -> 
      (* This is an error case eg /a/b/missing/some/more/stuff *)
-     Error (`Missing_slash (comp,s.cwd,remaining)))
+     Error (`Missing_slash_etc (comp,s.cwd,remaining)))
 
  | `Missing_finished_no_slash (parent_id,comp) -> Ok Simplified_result.{
      parent_id; comp; result=Missing; trailing_slash=false }
@@ -384,7 +384,7 @@ cwd:'dir_id ->
 string ->
 (('file_id,'dir_id) Simplified_result.simplified_result,
  [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id  (* FIXME clarify further? *)
-  | `Missing_slash of comp_ * 'dir_id * string ]) result
+  | `Missing_slash_etc of comp_ * 'dir_id * string ]) result
 = resolve_simplified
 
 let resolve = resolve_simplified
