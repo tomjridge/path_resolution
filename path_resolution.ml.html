@@ -360,7 +360,7 @@ behaviour
 
 </span><span class="comment-delimiter">*)</span>
 
-<span class="governing">let</span> <span class="function-name">resolve</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">fs_ops </span><span class="operator">~</span><span class="variable-name">follow_last_symlink </span><span class="operator">~</span><span class="variable-name">cwd</span> <span class="operator">=</span> 
+<span class="governing">let</span> <span class="function-name">resolve'</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">fs_ops </span><span class="operator">~</span><span class="variable-name">follow_last_symlink </span><span class="operator">~</span><span class="variable-name">cwd</span> <span class="operator">=</span> 
   <span class="governing">let</span> <span class="variable-name">step</span> <span class="operator">=</span> step <span class="operator">~</span>fs_ops <span class="governing">in</span>
   <span class="governing">let</span> <span class="governing">rec</span> <span class="function-name">f</span><span class="variable-name"> s</span> <span class="operator">=</span> 
     <span class="keyword">assert</span> <span class="operator">(not</span> <span class="operator">(</span>is_finished s<span class="operator">));</span>
@@ -435,7 +435,7 @@ string <span class="operator">-&gt;</span>
  <span class="operator">|</span> <span class="constructor">`Missing_slash</span> <span class="keyword">of</span> comp_ <span class="operator">*</span> 'dir_id state
  <span class="operator">|</span> <span class="constructor">`Missing_finished_no_slash</span> <span class="keyword">of</span> 'dir_id <span class="operator">*</span> comp_
  <span class="operator">|</span> <span class="constructor">`Missing_finished_slash</span> <span class="keyword">of</span> 'dir_id <span class="operator">*</span> comp_ <span class="operator">]</span>
-<span class="operator">=</span> resolve
+<span class="operator">=</span> resolve'
 
 
 <span class="comment-delimiter">(* </span><span class="comment">the above has a lot of cases; we pick out some commonalities to
@@ -449,7 +449,7 @@ string <span class="operator">-&gt;</span>
 <span class="governing">include</span> <span class="module">Simplified_result</span>
 
 <span class="governing">let</span> <span class="function-name">resolve_simplified</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">fs_ops </span><span class="operator">~</span><span class="variable-name">follow_last_symlink </span><span class="operator">~</span><span class="variable-name">cwd s</span> <span class="operator">=</span> 
-  resolve <span class="operator">~</span>fs_ops <span class="operator">~</span>follow_last_symlink <span class="operator">~</span>cwd s <span class="operator">|&gt;</span> <span class="keyword">function</span>
+  resolve' <span class="operator">~</span>fs_ops <span class="operator">~</span>follow_last_symlink <span class="operator">~</span>cwd s <span class="operator">|&gt;</span> <span class="keyword">function</span>
   <span class="operator">|</span> <span class="constructor">`Error</span> e <span class="operator">-&gt;</span> <span class="constructor">Error</span> e
 
   <span class="operator">|</span> <span class="constructor">`Finished_no_slash_dir</span> <span class="operator">(</span>parent_id<span class="operator">,</span>comp<span class="operator">,</span>did<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="constructor">Ok</span> <span class="module">Simplified_result.</span><span class="operator">{</span> 
@@ -516,13 +516,15 @@ NOTE there may be other choices here
 
 <span class="governing">let</span> <span class="function-name">_</span> <span class="operator">:</span>
 <span class="constant">fs_ops</span><span class="operator">:(</span>'file_id<span class="operator">,</span>'dir_id<span class="operator">)</span> fs_ops <span class="operator">-&gt;</span>
-follow_last_symlink<span class="operator">:</span>bool <span class="operator">-&gt;</span>
+<span class="constant">follow_last_symlink</span><span class="operator">:</span>bool <span class="operator">-&gt;</span>
 <span class="constant">cwd</span><span class="operator">:</span>'dir_id <span class="operator">-&gt;</span>
 string <span class="operator">-&gt;</span>
 <span class="operator">((</span>'file_id<span class="operator">,</span>'dir_id<span class="operator">)</span> <span class="module">Simplified_result.</span>simplified_result<span class="operator">,</span>
  <span class="operator">[&gt;</span> <span class="constructor">`File_followed_by_slash_etc</span> <span class="keyword">of</span> 'dir_id state <span class="operator">*</span> comp_ <span class="operator">*</span> 'file_id  <span class="comment-delimiter">(* </span><span class="comment">FIXME clarify further? </span><span class="comment-delimiter">*)</span>
   <span class="operator">|</span> <span class="constructor">`Missing_slash</span> <span class="keyword">of</span> comp_ <span class="operator">*</span> 'dir_id <span class="operator">*</span> string <span class="operator">])</span> result
 <span class="operator">=</span> resolve_simplified
+
+<span class="governing">let</span> <span class="variable-name">resolve</span> <span class="operator">=</span> resolve_simplified
 
 <span class="operator">;;</span>
 
