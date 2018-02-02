@@ -7,3 +7,6 @@ https://tomjridge.github.io/path_resolution/path_resolution.ml.html
 To build, type `make`
 
 NOTE this installs a package `tjr_path_resolution` into ocamlfind/opam
+
+
+For documentation, please read the source code of `path_resolution.ml`
