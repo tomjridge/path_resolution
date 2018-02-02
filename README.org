@@ -3,6 +3,8 @@ account of real-world behaviour uncovered by SibylFS.
 
 https://tomjridge.github.io/path_resolution/path_resolution.ml.html
 
+https://tomjridge.github.io/path_resolution/tjr_path_resolution.mli.html
+
 
 To build, type `make`
 
