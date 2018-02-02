@@ -4,6 +4,7 @@ export BASH_ENV
 
 
 all: FORCE
+	$$ocamlc -c tjr_path_resolution.mli
 	$$ocamlc -c $$mls
 	$$ocamlopt -c $$mls
 	@echo "NOTE cma contains: $$cmos" # simple check

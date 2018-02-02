@@ -223,7 +223,7 @@ behaviour
 
 *)
 
-let resolve ~fs_ops ~follow_last_symlink ~cwd = 
+let resolve' ~fs_ops ~follow_last_symlink ~cwd = 
   let step = step ~fs_ops in
   let rec f s = 
     assert (not (is_finished s));
@@ -298,7 +298,7 @@ string ->
  | `Missing_slash of comp_ * 'dir_id state
  | `Missing_finished_no_slash of 'dir_id * comp_
  | `Missing_finished_slash of 'dir_id * comp_ ]
-= resolve
+= resolve'
 
 
 (* the above has a lot of cases; we pick out some commonalities to
@@ -312,7 +312,7 @@ end
 include Simplified_result
 
 let resolve_simplified ~fs_ops ~follow_last_symlink ~cwd s = 
-  resolve ~fs_ops ~follow_last_symlink ~cwd s |> function
+  resolve' ~fs_ops ~follow_last_symlink ~cwd s |> function
   | `Error e -> Error e
 
   | `Finished_no_slash_dir (parent_id,comp,did) -> Ok Simplified_result.{ 
@@ -386,6 +386,8 @@ string ->
  [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id  (* FIXME clarify further? *)
   | `Missing_slash of comp_ * 'dir_id * string ]) result
 = resolve_simplified
+
+let resolve = resolve_simplified
 
 ;;
 
