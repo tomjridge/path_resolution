@@ -1,5 +1,7 @@
 (* filesystem ------------------------------------------------------- *)
 
+open Tjr_fs_shared.Monad
+
 open Path_component
 
 (* 
@@ -20,7 +22,7 @@ type ('file_id,'dir_id) resolve_result =
   | File of 'file_id | Dir of 'dir_id | Sym of string | Missing 
 
 
-type ('file_id,'dir_id) fs_ops = {
+type ('file_id,'dir_id,'t) fs_ops = {
   root: 'dir_id;
-  resolve_comp: 'dir_id -> comp_ -> ('file_id,'dir_id) resolve_result  
+  resolve_comp: 'dir_id -> comp_ -> (('file_id,'dir_id) resolve_result,'t) m
 }

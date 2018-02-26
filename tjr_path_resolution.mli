@@ -1,4 +1,6 @@
 
+open Tjr_fs_shared.Monad
+
 (** Path components ie strings without slash *)
 type comp_ = string
 
@@ -9,9 +11,9 @@ type ('file_id,'dir_id) resolve_result =
 
 
 (** What we need from the filesystem *)
-type ('file_id,'dir_id) fs_ops = {
+type ('file_id,'dir_id,'t) fs_ops = {
   root: 'dir_id;
-  resolve_comp: 'dir_id -> comp_ -> ('file_id,'dir_id) resolve_result  
+  resolve_comp: 'dir_id -> comp_ -> (('file_id,'dir_id) resolve_result,'t) m
 }
 
 
@@ -41,11 +43,12 @@ Errors:
 
 *)
 val resolve: 
-  fs_ops:('file_id,'dir_id) fs_ops ->
+  fs_ops:('file_id,'dir_id,'t) fs_ops ->
   follow_last_symlink:bool ->
   cwd:'dir_id ->
   string ->
-  (('file_id,'dir_id) simplified_result,
+  ((('file_id,'dir_id) simplified_result,
    [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id 
-   | `Missing_slash_etc of comp_ * 'dir_id * string ]) result  
+   | `Missing_slash_etc of comp_ * 'dir_id * string ]) result,
+   't) m
 
