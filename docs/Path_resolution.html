@@ -1,0 +1,65 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Fs_ops.html">
+<link rel="next" href="Tjr_path_resolution.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Path_component" rel="Chapter" href="Path_component.html">
+<link title="String_util" rel="Chapter" href="String_util.html">
+<link title="Fs_ops" rel="Chapter" href="Fs_ops.html">
+<link title="Path_resolution" rel="Chapter" href="Path_resolution.html">
+<link title="Tjr_path_resolution" rel="Chapter" href="Tjr_path_resolution.html"><title>Path_resolution</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Fs_ops.html" title="Fs_ops">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Tjr_path_resolution.html" title="Tjr_path_resolution">Next</a>
+</div>
+<h1>Module <a href="type_Path_resolution.html">Path_resolution</a></h1>
+
+<pre><span class="keyword">module</span> Path_resolution: <code class="code">sig</code> <a href="Path_resolution.html">..</a> <code class="code">end</code></pre><hr width="100%">
+
+<pre><code><span id="TYPEstate"><span class="keyword">type</span> <code class="type">'dir_id</code> state</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTstate.cwd">cwd</span>&nbsp;: <code class="type">'dir_id</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTstate.is_absolute">is_absolute</span>&nbsp;: <code class="type">bool</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTstate.path">path</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr></table>
+}
+
+
+
+<pre><span id="VALis_finished"><span class="keyword">val</span> is_finished</span> : <code class="type">'a <a href="Path_resolution.html#TYPEstate">state</a> -> bool</code></pre>
+<pre><span id="VALstate_from_symlink"><span class="keyword">val</span> state_from_symlink</span> : <code class="type">cwd:'a -> symlink_contents:string -> path:string -> 'a <a href="Path_resolution.html#TYPEstate">state</a></code></pre>
+<pre><span id="VALget_next_comp"><span class="keyword">val</span> get_next_comp</span> : <code class="type">'a <a href="Path_resolution.html#TYPEstate">state</a> -><br>       [> `Comp_with_slash of string<br>        | `Finished_no_slash of string<br>        | `Finished_slash of string<br>        | `Root ] *<br>       'a <a href="Path_resolution.html#TYPEstate">state</a></code></pre>
+<pre><span id="VALstep"><span class="keyword">val</span> step</span> : <code class="type">fs_ops:('a, 'b, 'c) <a href="Fs_ops.html#TYPEfs_ops">Fs_ops.fs_ops</a> -><br>       'b <a href="Path_resolution.html#TYPEstate">state</a> -><br>       ([> `Error of<br>             [> `File_followed_by_slash_etc of<br>                  'b <a href="Path_resolution.html#TYPEstate">state</a> * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'a ]<br>         | `Finished_no_slash of <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'b<br>         | `Finished_slash of <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'b<br>         | `Missing_slash of <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'b <a href="Path_resolution.html#TYPEstate">state</a><br>         | `Ok of 'b <a href="Path_resolution.html#TYPEstate">state</a> ],<br>        'c)<br>       Tjr_fs_shared.Monad.m</code></pre>
+<pre><span id="VALresolve_butlast"><span class="keyword">val</span> resolve_butlast</span> : <code class="type">fs_ops:('a, 'b, 'c) <a href="Fs_ops.html#TYPEfs_ops">Fs_ops.fs_ops</a> -><br>       cwd:'b -><br>       string -><br>       ([> `Error of<br>             [> `File_followed_by_slash_etc of<br>                  'b <a href="Path_resolution.html#TYPEstate">state</a> * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'a ]<br>         | `Finished_no_slash of <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'b<br>         | `Finished_slash of <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'b<br>         | `Missing_slash of <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'b <a href="Path_resolution.html#TYPEstate">state</a> ],<br>        'c)<br>       Tjr_fs_shared.Monad.m</code></pre>
+<pre><span id="VALresolve'"><span class="keyword">val</span> resolve'</span> : <code class="type">fs_ops:('a, 'b, 'c) <a href="Fs_ops.html#TYPEfs_ops">Fs_ops.fs_ops</a> -><br>       follow_last_symlink:bool -><br>       cwd:'b -><br>       string -><br>       ([> `Error of<br>             [> `File_followed_by_slash_etc of<br>                  'b <a href="Path_resolution.html#TYPEstate">state</a> * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'a ]<br>         | `Finished_no_slash_dir of 'b * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'b<br>         | `Finished_no_slash_file of 'b * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'a<br>         | `Finished_no_slash_symlink of 'b * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * string<br>         | `Finished_slash_dir of 'b * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'b<br>         | `Finished_slash_file of 'b * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'a<br>         | `Missing_finished_no_slash of 'b * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a><br>         | `Missing_finished_slash of 'b * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a><br>         | `Missing_slash of <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'b <a href="Path_resolution.html#TYPEstate">state</a> ],<br>        'c)<br>       Tjr_fs_shared.Monad.m</code></pre>
+<pre><span class="keyword">module</span> <a href="Path_resolution.Simplified_result.html">Simplified_result</a>: <code class="code">sig</code> <a href="Path_resolution.Simplified_result.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">include</span> Simplified_result</pre>
+
+<pre><span id="VALresolve_simplified"><span class="keyword">val</span> resolve_simplified</span> : <code class="type">fs_ops:('a, 'b, 'c) <a href="Fs_ops.html#TYPEfs_ops">Fs_ops.fs_ops</a> -><br>       follow_last_symlink:bool -><br>       cwd:'b -><br>       string -><br>       ((('a, 'b) <a href="Path_resolution.Simplified_result.html#TYPEsimplified_result">Simplified_result.simplified_result</a>,<br>         [> `File_followed_by_slash_etc of<br>              'b <a href="Path_resolution.html#TYPEstate">state</a> * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'a<br>          | `Missing_slash_etc of <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'b * string ])<br>        Pervasives.result, 'c)<br>       Tjr_fs_shared.Monad.m</code></pre>
+<pre><span id="VALresolve"><span class="keyword">val</span> resolve</span> : <code class="type">fs_ops:('a, 'b, 'c) <a href="Fs_ops.html#TYPEfs_ops">Fs_ops.fs_ops</a> -><br>       follow_last_symlink:bool -><br>       cwd:'b -><br>       string -><br>       ((('a, 'b) <a href="Path_resolution.Simplified_result.html#TYPEsimplified_result">Simplified_result.simplified_result</a>,<br>         [> `File_followed_by_slash_etc of<br>              'b <a href="Path_resolution.html#TYPEstate">state</a> * <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'a<br>          | `Missing_slash_etc of <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> * 'b * string ])<br>        Pervasives.result, 'c)<br>       Tjr_fs_shared.Monad.m</code></pre></body></html>

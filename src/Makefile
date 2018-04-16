@@ -25,10 +25,12 @@ uninstall:
 
 clean: 
 	clean
-
+	rm -f *.html *.css
 
 docs:
-	echo Convert (eg using emacs htmlfontify) the .mli and .ml to html and copy to ../docs/
+	echo Make sure to build first
+	mk_doc
+	cp *.html *.css ../docs
 
 
 FORCE:

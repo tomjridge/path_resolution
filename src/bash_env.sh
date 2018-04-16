@@ -15,6 +15,14 @@ function clean() {
 }
 
 
+mls=`ocamldep -sort -one-line *.ml`
+
+function mk_doc() {
+    ocamlfind ocamldoc $PKGS $WARN -html $mls tjr_path_resolution.mli
+}
+
+
+
 
 # generic from here ----------------------------------------------------
 

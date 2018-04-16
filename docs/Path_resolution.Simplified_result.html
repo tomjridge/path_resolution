@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="Up" href="Path_resolution.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Path_component" rel="Chapter" href="Path_component.html">
+<link title="String_util" rel="Chapter" href="String_util.html">
+<link title="Fs_ops" rel="Chapter" href="Fs_ops.html">
+<link title="Path_resolution" rel="Chapter" href="Path_resolution.html">
+<link title="Tjr_path_resolution" rel="Chapter" href="Tjr_path_resolution.html"><title>Path_resolution.Simplified_result</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="Path_resolution.html" title="Path_resolution">Up</a>
+&nbsp;</div>
+<h1>Module <a href="type_Path_resolution.Simplified_result.html">Path_resolution.Simplified_result</a></h1>
+
+<pre><span class="keyword">module</span> Simplified_result: <code class="code">sig</code> <a href="Path_resolution.Simplified_result.html">..</a> <code class="code">end</code></pre><hr width="100%">
+
+<pre><code><span id="TYPEsimplified_result'"><span class="keyword">type</span> <code class="type">('file_id, 'dir_id)</code> simplified_result'</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTsimplified_result'.File"><span class="constructor">File</span></span> <span class="keyword">of</span> <code class="type">'file_id</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTsimplified_result'.Dir"><span class="constructor">Dir</span></span> <span class="keyword">of</span> <code class="type">'dir_id</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTsimplified_result'.Sym"><span class="constructor">Sym</span></span> <span class="keyword">of</span> <code class="type">string</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTsimplified_result'.Missing"><span class="constructor">Missing</span></span></code></td>
+
+</tr></table>
+
+
+
+<pre><code><span id="TYPEsimplified_result"><span class="keyword">type</span> <code class="type">('file_id, 'dir_id)</code> simplified_result</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTsimplified_result.parent_id">parent_id</span>&nbsp;: <code class="type">'dir_id</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTsimplified_result.comp">comp</span>&nbsp;: <code class="type"><a href="Path_component.html#TYPEcomp_">Path_component.comp_</a></code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTsimplified_result.result">result</span>&nbsp;: <code class="type">('file_id, 'dir_id) <a href="Path_resolution.Simplified_result.html#TYPEsimplified_result'">simplified_result'</a></code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTsimplified_result.trailing_slash">trailing_slash</span>&nbsp;: <code class="type">bool</code>;</code></td>
+
+</tr></table>
+}
+
+
+</body></html>
