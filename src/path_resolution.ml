@@ -225,6 +225,9 @@ behaviour
 
 *)
 
+type follow_last_symlink = Always | If_trailing_slash | Never
+
+
 let resolve' ~fs_ops ~follow_last_symlink ~cwd = 
   let step = step ~fs_ops in
   let rec f s = 
@@ -238,11 +241,11 @@ let resolve' ~fs_ops ~follow_last_symlink ~cwd =
         | File fid -> return @@ `Finished_no_slash_file (dir,comp,fid)
         | Dir d -> return @@ `Finished_no_slash_dir (dir,comp,d)
         | Sym str -> (
-            (* A symlink without a trailing slash *)
+            (* A symlink *without* a trailing slash *)
             match follow_last_symlink with
-            | true -> 
+            | Always ->
               state_from_symlink ~cwd:dir ~symlink_contents:str ~path:"" |> f
-            | false -> 
+            | _ -> 
               return @@ `Finished_no_slash_symlink (dir,comp,str))
         | Missing -> return @@ `Missing_finished_no_slash(dir,comp))
 
@@ -260,11 +263,10 @@ let resolve' ~fs_ops ~follow_last_symlink ~cwd =
         | Sym str -> (
             (* NOTE there is a trailing slash; FIXME the following
                line doesn't hold on all platforms; parameterize *)
-            let follow_last_symlink = true in  (* because trailing slash *)
             match follow_last_symlink with
-            | true -> 
+            | Always | If_trailing_slash -> 
               state_from_symlink ~cwd:dir ~symlink_contents:str ~path:"" |> f
-            | false -> 
+            | Never -> 
               (* NOTE this case only occurs if the follow_last_symlink
                  is false - which may occur on some platforms FIXME *)
               (* `Finished_slash_symlink (dir,comp,str) *)
@@ -287,7 +289,7 @@ let resolve' ~fs_ops ~follow_last_symlink ~cwd =
 
 let _ : 
 fs_ops: ('file_id,'dir_id,'t) fs_ops ->
-follow_last_symlink:bool ->
+follow_last_symlink:follow_last_symlink ->
 cwd:'dir_id ->
 string ->
 ([> `Error of [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id ]
@@ -382,7 +384,7 @@ NOTE there may be other choices here
 
 let _ :
 fs_ops:('file_id,'dir_id,'t) fs_ops ->
-follow_last_symlink:bool ->
+follow_last_symlink:follow_last_symlink ->
 cwd:'dir_id ->
 string ->
 ((('file_id,'dir_id) Simplified_result.simplified_result,

@@ -51,6 +51,10 @@ type ('file_id,'dir_id) simplified_result =
     { parent_id: 'dir_id; comp: comp_; result: ('file_id,'dir_id) simplified_result'; trailing_slash:bool }
 
 
+(** Different commands resolve symlinks in different ways. This allows
+    control over that behaviour, also taking into account whether there is
+    a trailing slash or not. *)
+type follow_last_symlink = Always | If_trailing_slash | Never
 
 (** The resolve function itself. 
 
@@ -61,7 +65,7 @@ Errors:
 *)
 val resolve: 
   fs_ops:('file_id,'dir_id,'t) fs_ops ->
-  follow_last_symlink:bool ->
+  follow_last_symlink:follow_last_symlink ->
   cwd:'dir_id ->
   string ->
   ((('file_id,'dir_id) simplified_result,

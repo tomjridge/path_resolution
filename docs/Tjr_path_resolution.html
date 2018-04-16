@@ -201,6 +201,36 @@ We have the following information about a resolved path:
 </div>
 
 
+<pre><code><span id="TYPEfollow_last_symlink"><span class="keyword">type</span> <code class="type"></code>follow_last_symlink</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTfollow_last_symlink.Always"><span class="constructor">Always</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTfollow_last_symlink.If_trailing_slash"><span class="constructor">If_trailing_slash</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTfollow_last_symlink.Never"><span class="constructor">Never</span></span></code></td>
+
+</tr></table>
+
+<div class="info ">
+Different commands resolve symlinks in different ways. This allows
+    control over that behaviour, also taking into account whether there is
+    a trailing slash or not.<br>
+</div>
+
+
 <pre><span id="VALresolve"><span class="keyword">val</span> resolve</span> : <code class="type">fs_ops:('file_id, 'dir_id, 't) <a href="Tjr_path_resolution.html#TYPEfs_ops">fs_ops</a> -><br>       follow_last_symlink:bool -><br>       cwd:'dir_id -><br>       string -><br>       ((('file_id, 'dir_id) <a href="Tjr_path_resolution.html#TYPEsimplified_result">simplified_result</a>,<br>         [> `File_followed_by_slash_etc of<br>              'dir_id <a href="Tjr_path_resolution.html#TYPEstate">state</a> * <a href="Tjr_path_resolution.html#TYPEcomp_">comp_</a> *<br>              'file_id<br>          | `Missing_slash_etc of <a href="Tjr_path_resolution.html#TYPEcomp_">comp_</a> * 'dir_id * string ])<br>        Pervasives.result, 't)<br>       Tjr_fs_shared.Monad.m</code></pre><div class="info ">
 The resolve function itself. 
 <p>

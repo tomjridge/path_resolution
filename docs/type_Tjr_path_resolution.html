@@ -40,6 +40,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;result&nbsp;:&nbsp;(<span class="keywordsign">'</span>file_id,&nbsp;<span class="keywordsign">'</span>dir_id)&nbsp;<span class="constructor">Tjr_path_resolution</span>.simplified_result';<br>
 &nbsp;&nbsp;&nbsp;&nbsp;trailing_slash&nbsp;:&nbsp;bool;<br>
 &nbsp;&nbsp;}<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;follow_last_symlink&nbsp;=&nbsp;<span class="constructor">Always</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">If_trailing_slash</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Never</span><br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;resolve&nbsp;:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;fs_ops:(<span class="keywordsign">'</span>file_id,&nbsp;<span class="keywordsign">'</span>dir_id,&nbsp;<span class="keywordsign">'</span>t)&nbsp;<span class="constructor">Tjr_path_resolution</span>.fs_ops&nbsp;<span class="keywordsign">-&gt;</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;follow_last_symlink:bool&nbsp;<span class="keywordsign">-&gt;</span><br>
