@@ -18,8 +18,4 @@ NOTE this installs a package `tjr_path_resolution` into ocamlfind/opam
 For documentation, please read the source code of `./src/path_resolution.ml`
 or the commented `./src/tjr_path_resolution.mli` for the interface.
 
-These have been coverted into html in the `docs/` directory (but
-beware these may be out of date).
-
-
-
+The ocamldoc is here: <https://tomjridge.github.io/path_resolution/docs>
