@@ -1,20 +1,23 @@
+(** Interface to a specification/implementation of path resolution. *)
 
 open Tjr_fs_shared.Monad
 
-(** Path components ie strings without slash *)
+(** Path components ie strings without slash. *)
 type comp_ = string
 
 
-(** Result of resolving a single path component *)
+(** Result of resolving a single path component. *)
 type ('file_id,'dir_id) resolve_result = 
   | File of 'file_id | Dir of 'dir_id | Sym of string | Missing 
 
 
-(** What we need from the filesystem *)
+
+(** What we need from the filesystem. *)
 type ('file_id,'dir_id,'t) fs_ops = {
   root: 'dir_id;
   resolve_comp: 'dir_id -> comp_ -> (('file_id,'dir_id) resolve_result,'t) m
 }
+
 
 
 (** The state maintained during path resolution; any user-visible (ie
@@ -32,6 +35,8 @@ type 'dir_id state = {
 (** The result of path resolution... *)
 type ('file_id,'dir_id) simplified_result' = File of 'file_id | Dir of 'dir_id | Sym of string | Missing
 
+
+
 (** 
 
 We have the following information about a resolved path:
@@ -44,6 +49,7 @@ We have the following information about a resolved path:
 *)
 type ('file_id,'dir_id) simplified_result = 
     { parent_id: 'dir_id; comp: comp_; result: ('file_id,'dir_id) simplified_result'; trailing_slash:bool }
+
 
 
 (** The resolve function itself. 

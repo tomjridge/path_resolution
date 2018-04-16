@@ -25,12 +25,12 @@ uninstall:
 
 clean: 
 	clean
-	rm -f *.html *.css
 
 docs:
 	echo Make sure to build first
 	mk_doc
 	cp *.html *.css ../docs
+	rm -f *.html *.css
 
 
 FORCE:
