@@ -5,7 +5,7 @@ set -a # export all vars
 # NOTE in toplevel you need to #require "bos.top" and bos.setup;;
 
 libname="tjr_path_resolution"
-required_packages="extunix,tjr_fs_shared"
+required_packages="extunix,tjr_step_monad,tjr_fs_shared"
 description="Path resolution, symlinks, etc"
 
 

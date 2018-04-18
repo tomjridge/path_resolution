@@ -1,6 +1,6 @@
 (** Interface to a specification/implementation of path resolution. *)
 
-open Tjr_fs_shared.Monad
+open Tjr_step_monad
 
 (** Path components ie strings without slash. *)
 type comp_ = string

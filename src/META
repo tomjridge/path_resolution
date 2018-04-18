@@ -1,6 +1,6 @@
 name="tjr_path_resolution"
 description="Path resolution, symlinks, etc"
-version="2018-04-16"
-requires="extunix,tjr_fs_shared"
+version="2018-04-18"
+requires="extunix,tjr_step_monad,tjr_fs_shared"
 archive(byte)="tjr_path_resolution.cma"
 archive(native)="tjr_path_resolution.cmxa"
