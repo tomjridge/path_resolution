@@ -20,10 +20,13 @@ let drop_first_char s =
   String.sub s 1 (String.length s -1)
 
 
-let starts_with_slash str = 
+let strip_leading_slash str = 
   match str <>"" && first_char str = slash_char with
   | true -> Some (drop_first_char str)
   | false -> None
+
+
+let starts_with_slash str = strip_leading_slash str <> None
 
 
 let string_explode s = 

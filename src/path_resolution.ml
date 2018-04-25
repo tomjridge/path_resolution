@@ -92,7 +92,7 @@ remainder of the path we are currently processing.
 *)
 let state_from_symlink ~cwd ~symlink_contents ~path = 
   let str = symlink_contents in
-  match starts_with_slash str with
+  match strip_leading_slash str with
   | Some str' -> 
     { cwd;
       is_absolute=true; 
@@ -156,21 +156,21 @@ actually passed to fs_ops to resolve
 
     *)
     fs_ops.resolve_comp s.cwd c |> bind @@ function
-    | File fid -> 
+    | RC_file fid -> 
       (* NOTE we have something like f.txt/// or f.txt/a/b; f.txt/ is
          actually treated as valid on some platforms, especially if
          f.txt is a symlink to a file, so that the trailing slash
          means "follow symlink" FIXME add a flag for this *)
       return @@ `Error (`File_followed_by_slash_etc (s,c,fid))
 
-    | Dir d -> return @@ `Ok {s with cwd=d}
+    | RC_dir d -> return @@ `Ok {s with cwd=d}
 
-    | Sym str -> (
+    | RC_sym str -> (
         (* We have something like symlink// or symlink/x/y/z; in the
            first case, we force the follow of the symlink FIXME some
            platforms do not do this, so parameterize *)
         return @@ `Ok (state_from_symlink ~cwd:s.cwd ~symlink_contents:str ~path:s.path))
-    | Missing -> 
+    | RC_missing -> 
       (* NOTE missing/ is ok if the target is a missing directory *)
       (* This may or may not be valid. So return all that we know at
          this point; path may be empty, or eg "///" so this could be a
@@ -194,7 +194,7 @@ let resolve_butlast ~fs_ops ~cwd =
     | `Missing_slash x -> return @@ `Missing_slash x
   in  
   fun s ->
-    match starts_with_slash s with
+    match strip_leading_slash s with
     | None -> f { cwd; is_absolute=false; path=s }
     | Some path -> f { cwd; is_absolute=true; path }
 
@@ -225,7 +225,9 @@ behaviour
 
 *)
 
-type follow_last_symlink = Always | If_trailing_slash | Never
+
+(* NOTE make this polyvar so we don't have to open a module *)
+type follow_last_symlink = [ `Always | `If_trailing_slash | `Never ]
 
 
 let resolve' ~fs_ops ~follow_last_symlink ~cwd = 
@@ -238,41 +240,41 @@ let resolve' ~fs_ops ~follow_last_symlink ~cwd =
     | `Finished_no_slash (comp,dir) -> (
         (* Cases where there is no trailing slash *)
         fs_ops.resolve_comp dir comp |> bind @@ function
-        | File fid -> return @@ `Finished_no_slash_file (dir,comp,fid)
-        | Dir d -> return @@ `Finished_no_slash_dir (dir,comp,d)
-        | Sym str -> (
+        | RC_file fid -> return @@ `Finished_no_slash_file (dir,comp,fid)
+        | RC_dir d -> return @@ `Finished_no_slash_dir (dir,comp,d)
+        | RC_sym str -> (
             (* A symlink *without* a trailing slash *)
             match follow_last_symlink with
-            | Always ->
+            | `Always ->
               state_from_symlink ~cwd:dir ~symlink_contents:str ~path:"" |> f
             | _ -> 
               return @@ `Finished_no_slash_symlink (dir,comp,str))
-        | Missing -> return @@ `Missing_finished_no_slash(dir,comp))
+        | RC_missing -> return @@ `Missing_finished_no_slash(dir,comp))
 
     | `Finished_slash (comp,dir) -> (
         (* Cases where there is a trailing slash *)
         fs_ops.resolve_comp dir comp |> bind @@ function
-        | File fid -> 
+        | RC_file fid -> 
           (* NOTE potentially an error *)
           return @@ `Finished_slash_file (dir,comp,fid)
 
-        | Dir d -> 
+        | RC_dir d -> 
           (* Never (?) an error *)
           return @@ `Finished_slash_dir (dir,comp,d)
 
-        | Sym str -> (
+        | RC_sym str -> (
             (* NOTE there is a trailing slash; FIXME the following
                line doesn't hold on all platforms; parameterize *)
             match follow_last_symlink with
-            | Always | If_trailing_slash -> 
+            | `Always | `If_trailing_slash -> 
               state_from_symlink ~cwd:dir ~symlink_contents:str ~path:"" |> f
-            | Never -> 
+            | `Never -> 
               (* NOTE this case only occurs if the follow_last_symlink
                  is false - which may occur on some platforms FIXME *)
               (* `Finished_slash_symlink (dir,comp,str) *)
               failwith "impossible at the moment")
 
-        | Missing -> return @@ `Missing_finished_slash(dir,comp))
+        | RC_missing -> return @@ `Missing_finished_slash(dir,comp))
 
     | `Error e -> return @@ `Error e
 
@@ -283,7 +285,7 @@ let resolve' ~fs_ops ~follow_last_symlink ~cwd =
       return @@ `Missing_slash (comp,s)
   in  
   fun s ->
-    match starts_with_slash s with
+    match strip_leading_slash s with
     | None -> f { cwd; is_absolute=false; path=s }
     | Some path -> f { cwd; is_absolute=true; path }
 

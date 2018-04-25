@@ -1,5 +1,8 @@
 (** Interface to a specification/implementation of path resolution. *)
 
+
+(* FIXME we may want to expose some of the functions in String_util *)
+
 open Tjr_step_monad
 
 (** Path components ie strings without slash. *)
@@ -7,15 +10,16 @@ type comp_ = string
 
 
 (** Result of resolving a single path component. *)
-type ('file_id,'dir_id) resolve_result = 
-  | File of 'file_id | Dir of 'dir_id | Sym of string | Missing 
+(* FIXME rename resolved_comp; also avoid clash with later type? or at least split into a separate module *)
+type ('file_id,'dir_id) resolved_comp = 
+  | RC_file of 'file_id | RC_dir of 'dir_id | RC_sym of string | RC_missing 
 
 
 
 (** What we need from the filesystem. *)
 type ('file_id,'dir_id,'t) fs_ops = {
   root: 'dir_id;
-  resolve_comp: 'dir_id -> comp_ -> (('file_id,'dir_id) resolve_result,'t) m
+  resolve_comp: 'dir_id -> comp_ -> (('file_id,'dir_id) resolved_comp,'t) m
 }
 
 
@@ -33,7 +37,8 @@ type 'dir_id state = {
 
 
 (** The result of path resolution... *)
-type ('file_id,'dir_id) simplified_result' = File of 'file_id | Dir of 'dir_id | Sym of string | Missing
+type ('file_id,'dir_id) simplified_result' = 
+    File of 'file_id | Dir of 'dir_id | Sym of string | Missing
 
 
 
@@ -47,14 +52,18 @@ We have the following information about a resolved path:
 - [trailing_slash] whether there was a **single** trailing slash left to process
 
 *)
-type ('file_id,'dir_id) simplified_result = 
-    { parent_id: 'dir_id; comp: comp_; result: ('file_id,'dir_id) simplified_result'; trailing_slash:bool }
+type ('file_id,'dir_id) simplified_result = { 
+  parent_id: 'dir_id; 
+  comp: comp_; 
+  result: ('file_id,'dir_id) simplified_result'; 
+  trailing_slash:bool 
+}
 
 
 (** Different commands resolve symlinks in different ways. This allows
     control over that behaviour, also taking into account whether there is
     a trailing slash or not. *)
-type follow_last_symlink = Always | If_trailing_slash | Never
+type follow_last_symlink = [ `Always | `If_trailing_slash | `Never ]
 
 (** The resolve function itself. 
 
