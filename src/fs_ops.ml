@@ -1,6 +1,6 @@
 (* filesystem ------------------------------------------------------- *)
 
-open Tjr_step_monad
+open Tjr_monad.Monad
 
 open Path_component
 

@@ -3,7 +3,7 @@
 
 (* FIXME we may want to expose some of the functions in String_util *)
 
-open Tjr_step_monad
+open Tjr_monad.Monad
 
 (** Path components ie strings without slash. *)
 type comp_ = string
@@ -73,6 +73,7 @@ Errors:
 
 *)
 val resolve: 
+  monad_ops: 't monad_ops ->
   fs_ops:('file_id,'dir_id,'t) fs_ops ->
   follow_last_symlink:follow_last_symlink ->
   cwd:'dir_id ->
