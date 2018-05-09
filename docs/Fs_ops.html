@@ -26,33 +26,33 @@
 
 <pre><span class="keyword">module</span> Fs_ops: <code class="code">sig</code> <a href="Fs_ops.html">..</a> <code class="code">end</code></pre><hr width="100%">
 
-<pre><code><span id="TYPEresolve_result"><span class="keyword">type</span> <code class="type">('file_id, 'dir_id)</code> resolve_result</span> = </code></pre><table class="typetable">
+<pre><code><span id="TYPEresolved_comp"><span class="keyword">type</span> <code class="type">('file_id, 'dir_id)</code> resolved_comp</span> = </code></pre><table class="typetable">
 <tr>
 <td align="left" valign="top" >
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTresolve_result.File"><span class="constructor">File</span></span> <span class="keyword">of</span> <code class="type">'file_id</code></code></td>
+<code><span id="TYPEELTresolved_comp.RC_file"><span class="constructor">RC_file</span></span> <span class="keyword">of</span> <code class="type">'file_id</code></code></td>
 
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTresolve_result.Dir"><span class="constructor">Dir</span></span> <span class="keyword">of</span> <code class="type">'dir_id</code></code></td>
+<code><span id="TYPEELTresolved_comp.RC_dir"><span class="constructor">RC_dir</span></span> <span class="keyword">of</span> <code class="type">'dir_id</code></code></td>
 
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTresolve_result.Sym"><span class="constructor">Sym</span></span> <span class="keyword">of</span> <code class="type">string</code></code></td>
+<code><span id="TYPEELTresolved_comp.RC_sym"><span class="constructor">RC_sym</span></span> <span class="keyword">of</span> <code class="type">string</code></code></td>
 
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTresolve_result.Missing"><span class="constructor">Missing</span></span></code></td>
+<code><span id="TYPEELTresolved_comp.RC_missing"><span class="constructor">RC_missing</span></span></code></td>
 
 </tr></table>
 
@@ -70,7 +70,7 @@
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTfs_ops.resolve_comp">resolve_comp</span>&nbsp;: <code class="type">'dir_id -><br>       <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> -><br>       (('file_id, 'dir_id) <a href="Fs_ops.html#TYPEresolve_result">resolve_result</a>, 't) Tjr_fs_shared.Monad.m</code>;</code></td>
+<code><span id="TYPEELTfs_ops.resolve_comp">resolve_comp</span>&nbsp;: <code class="type">'dir_id -><br>       <a href="Path_component.html#TYPEcomp_">Path_component.comp_</a> -><br>       (('file_id, 'dir_id) <a href="Fs_ops.html#TYPEresolved_comp">resolved_comp</a>, 't) Tjr_monad.Monad.m</code>;</code></td>
 
 </tr></table>
 }
