@@ -26,31 +26,35 @@ let _ = Unix.chdir root
 ;;
 
 
+let monad_ops = Tjr_monad.Imperative_instance.monad_ops
+open Tjr_monad.Monad
+open Tjr_monad.Imperative_instance
+
 let fs_ops = Fs_ops.{
   root = Private_dir_id root;
   resolve_comp = (
-    fun did c ->
+    fun did c -> monad_ops.return @@
       let open Unix in
       did |> function (Private_dir_id did) ->
       let path = (did^"/"^c) in
         match lstat path with
         | exception _ -> 
           (* assume not present *)
-          Missing
+          RC_missing
         | stats ->
           match stats.st_kind with
-          | S_REG -> File (Private_file_id path)
+          | S_REG -> RC_file (Private_file_id path)
           | S_DIR -> 
             (* FIXME we need to canonicalize paths, but OCaml lacks a
                native way to do this *)
-            Dir (Private_dir_id (realpath path)) 
-          | S_LNK -> Sym (readlink path)
+            RC_dir (Private_dir_id (realpath path)) 
+          | S_LNK -> RC_sym (readlink path)
           | _ -> failwith "unrecognized type")
 }
 
 let cwd = Private_dir_id root
 
-let resolve = resolve_butlast ~fs_ops ~cwd
+let resolve s = resolve_butlast ~monad_ops ~fs_ops ~cwd s |> from_m
 
 ;;
 let r1 = resolve "/a/b.txt";;
