@@ -178,7 +178,18 @@ actually passed to fs_ops to resolve
          valid path *)
       monad_ops.return @@ `Missing_slash(c,s)
 
-let _ = step
+let _ : 
+monad_ops:'a Tjr_monad.Monad.monad_ops ->fs_ops:('b, 'c, 'a) Fs_ops.fs_ops ->
+'c state ->
+([> `Error of
+      [> `File_followed_by_slash_etc of 'c state * Path_component.comp_ * 'b ]
+  | `Finished_no_slash of Path_component.comp_ * 'c  (* maybe symlink *)
+  | `Finished_slash of Path_component.comp_ * 'c  (* maybe symlink *)
+  | `Missing_slash of Path_component.comp_ * 'c state
+  | `Ok of 'c state ],
+ 'a)
+Tjr_monad.Monad.m
+= step
 
 
 (* Resolve all but the last component; not used by the main `resolve`
@@ -276,7 +287,7 @@ let resolve' ~monad_ops ~fs_ops ~follow_last_symlink ~cwd =
               (* NOTE this case only occurs if the follow_last_symlink
                  is false - which may occur on some platforms FIXME *)
               (* `Finished_slash_symlink (dir,comp,str) *)
-              failwith "impossible at the moment")
+              failwith "impossible at the moment"  (* FIXME? *))
 
         | RC_missing -> monad_ops.return @@ `Missing_finished_slash(dir,comp))
 
