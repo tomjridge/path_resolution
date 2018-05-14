@@ -74,6 +74,9 @@ type 'dir_id state = {
 }
 
 
+(* whether the state is "finished"; if is_absolute, then we can do
+   more (ie we are not finished); otherwise if path is empty, then we
+   are finished *)
 let is_finished s = 
   not (s.is_absolute) && (s.path = "")
 
@@ -108,7 +111,12 @@ let state_from_symlink ~cwd ~symlink_contents ~path =
 let get_next_comp s = 
   assert (not (is_finished s));
   match s.is_absolute with
-  | true -> `Root, {s with is_absolute=false}
+  | true -> 
+    {s with is_absolute=false} |> fun s ->
+    if is_finished s 
+    then `Root_finished,s
+    else `Root_unfinished,s
+                   
   | false ->
     (* we know that path <> "" *)
     assert(s.path <> "");
@@ -128,7 +136,8 @@ let step ~monad_ops ~fs_ops s =
   (* get the next path component *)
   s |> get_next_comp |> function
 
-  | `Root,s -> monad_ops.return @@ `Ok {s with cwd=fs_ops.root}
+  | `Root_finished,s -> monad_ops.return @@ `Finished_root
+  | `Root_unfinished,s -> monad_ops.return @@ `Ok {s with cwd=fs_ops.root}
 
   | `Finished_no_slash c,s -> 
     (* No more path components left. It may be that the current
@@ -183,6 +192,7 @@ monad_ops:'a Tjr_monad.Monad.monad_ops ->fs_ops:('b, 'c, 'a) Fs_ops.fs_ops ->
 'c state ->
 ([> `Error of
       [> `File_followed_by_slash_etc of 'c state * Path_component.comp_ * 'b ]
+ | `Finished_root
   | `Finished_no_slash of Path_component.comp_ * 'c  (* maybe symlink *)
   | `Finished_slash of Path_component.comp_ * 'c  (* maybe symlink *)
   | `Missing_slash of Path_component.comp_ * 'c state
@@ -201,6 +211,7 @@ let resolve_butlast ~monad_ops ~fs_ops ~cwd =
     assert (not (is_finished s));
     step s >>= function
     | `Ok s -> f s
+    | `Finished_root -> monad_ops.return @@ `Finished_root
     | `Finished_no_slash x -> monad_ops.return @@ `Finished_no_slash x
     | `Finished_slash x -> monad_ops.return @@ `Finished_slash x
     | `Error e -> monad_ops.return @@ `Error e
@@ -218,6 +229,7 @@ let _ :
   monad_ops: 't monad_ops ->
   fs_ops: ('file_id,'dir_id,'t) fs_ops -> cwd:'dir_id -> string ->
   ([> `Error of [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id ]
+   | `Finished_root
   | `Finished_no_slash of comp_ * 'dir_id
   | `Finished_slash of comp_ * 'dir_id
   | `Missing_slash of comp_ * 'dir_id state ],
@@ -251,6 +263,8 @@ let resolve' ~monad_ops ~fs_ops ~follow_last_symlink ~cwd =
     assert (not (is_finished s));
     step s >>= function
     | `Ok s -> f s
+
+    | `Finished_root -> monad_ops.return `Finished_root
 
     | `Finished_no_slash (comp,dir) -> (
         (* Cases where there is no trailing slash *)
@@ -311,6 +325,7 @@ follow_last_symlink:follow_last_symlink ->
 cwd:'dir_id ->
 string ->
 ([> `Error of [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id ]
+ | `Finished_root
  | `Finished_no_slash_dir of 'dir_id * comp_ * 'dir_id
  | `Finished_no_slash_file of 'dir_id * comp_ * 'file_id
  | `Finished_no_slash_symlink of 'dir_id * comp_ * string
@@ -328,16 +343,29 @@ string ->
    simplify subsequent case splitting *)
 
 module Simplified_result = struct
+
+
   type ('file_id,'dir_id) simplified_result' = File of 'file_id | Dir of 'dir_id | Sym of string | Missing
   type ('file_id,'dir_id) simplified_result = 
     { parent_id: 'dir_id; comp: comp_; result: ('file_id,'dir_id) simplified_result'; trailing_slash:bool }
+
+  (* a "special" result for root *)
+  (* FIXME there is a question here about what to do exactly for root; hopefully the following will suffice *)
+  let simplified_result_root ~fs_ops =
+    let root = fs_ops.root in
+    { parent_id=root; comp=""; result=(Dir root); trailing_slash=false}
+
 end
 include Simplified_result
+
+  
 
 let resolve_simplified ~monad_ops ~fs_ops ~follow_last_symlink ~cwd s = 
   let ( >>= ) = monad_ops.bind in
   resolve' ~monad_ops ~fs_ops ~follow_last_symlink ~cwd s >>= function
   | `Error e -> monad_ops.return @@ Error e
+
+  | `Finished_root -> monad_ops.return @@ Ok (simplified_result_root ~fs_ops)
 
   | `Finished_no_slash_dir (parent_id,comp,did) -> monad_ops.return @@ Ok Simplified_result.{ 
       parent_id; comp; result=(Dir did); trailing_slash=false }

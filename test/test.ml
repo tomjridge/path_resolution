@@ -62,6 +62,7 @@ let r2 = resolve "/a/d_link";;
 let r3 = resolve "/a/d_link/";;
 let r4 = resolve "/a/d_link/e.txt";;
 let r5 = resolve "/a/d_link/e.txt/";;
+(* let r6 = resolve "/";; *)
 
 let _ = 
   assert (r1 = `Finished_no_slash ("b.txt",Private_dir_id (root^"/a")));
@@ -72,8 +73,52 @@ let _ =
   ()
 ;;
 
+(* resolve' --------------------------------------------------------- *)
 
-(* finally, reset cwd *)
+let resolve s = 
+  resolve' ~monad_ops ~fs_ops ~follow_last_symlink:`Always ~cwd s |> from_m
+
+let r1 = resolve "/"
+
+let root_id = Private_dir_id root
+
+let _ = 
+  assert (r1 = `Finished_root)
+
+
+(* resolve_simplified ----------------------------------------------- *)
+
+let resolve s = 
+  resolve_simplified ~monad_ops ~fs_ops ~follow_last_symlink:`Always ~cwd s |> from_m
+
+let dest_Ok = function
+  | Ok x -> x
+  | _ -> failwith __LOC__
+
+let r1 = dest_Ok @@ resolve "/a/b.txt";;
+let r2 = dest_Ok @@ resolve "/a/d_link";;
+let r3 = dest_Ok @@ resolve "/a/d_link/";;
+let r4 = dest_Ok @@ resolve "/a/d_link/e.txt";;
+let r5 = dest_Ok @@ resolve "/a/d_link/e.txt/";;
+let r6 = dest_Ok @@ resolve "/";;
+
+let _ = 
+  assert (r1.result = File (Private_file_id (root^"/c.txt")));
+  assert (r2.result = Dir (Private_dir_id (root^"/d")));
+  assert (r3.result = Dir (Private_dir_id (root^"/d")));
+  assert (r3.trailing_slash);
+  assert (r4.result = File(Private_file_id (root^"/d/e.txt")));
+  assert (r5.result = File(Private_file_id (root^"/d/e.txt")));
+  assert (r5.trailing_slash);
+  ()
+;;
+
+
+
+
+
+(* finally, reset cwd ------------------------------------------------ *)
+
 let _ = Unix.chdir old_cwd
 
 ;;
