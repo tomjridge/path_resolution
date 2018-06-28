@@ -26,6 +26,9 @@ uninstall:
 clean: 
 	clean
 
+real_clean:
+	clean
+
 docs:
 	echo Make sure to build first
 	mk_doc
