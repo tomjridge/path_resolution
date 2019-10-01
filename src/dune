@@ -1,0 +1,8 @@
+(env
+  (_ (flags (:standard -open Tjr_monad -open Tjr_fs_shared))))
+
+(library
+  (public_name "tjr_path_resolution")
+  (libraries tjr_monad tjr_fs_shared)
+)
+

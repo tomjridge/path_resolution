@@ -1,0 +1,8 @@
+(env
+  (_ (flags (:standard -open Tjr_monad -open Tjr_fs_shared -open Tjr_path_resolution))))
+
+(executable
+  (name "test")
+  (libraries tjr_path_resolution extunix)
+)
+

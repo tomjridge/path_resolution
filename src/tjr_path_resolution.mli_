@@ -1,9 +1,24 @@
 (** Interface to a specification/implementation of path resolution. *)
 
+module Fs_ops : 
+sig
+  type ('file_id, 'dir_id) resolved_comp =
+    ('file_id, 'dir_id) Fs_ops.resolved_comp =
+      RC_file of 'file_id
+    | RC_dir of 'dir_id
+    | RC_sym of string
+    | RC_missing
+  type ('file_id, 'dir_id, 't) fs_ops =
+    ('file_id, 'dir_id, 't) Fs_ops.fs_ops = {
+    root : 'dir_id;
+    resolve_comp :
+      'dir_id -> string -> (('file_id, 'dir_id) resolved_comp, 't) m;
+  }
+end
+
+
 
 (* FIXME we may want to expose some of the functions in String_util *)
-
-open Tjr_monad.Monad
 
 (** Path components ie strings without slash. *)
 type comp_ = string

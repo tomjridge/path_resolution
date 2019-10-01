@@ -50,7 +50,6 @@ TODO:
 
 *)
 
-open Tjr_monad.Monad
 
 open String_util
 open Path_component
@@ -136,7 +135,7 @@ let step ~monad_ops ~fs_ops s =
   (* get the next path component *)
   s |> get_next_comp |> function
 
-  | `Root_finished,s -> monad_ops.return @@ `Finished_root
+  | `Root_finished,_s -> monad_ops.return @@ `Finished_root
   | `Root_unfinished,s -> monad_ops.return @@ `Ok {s with cwd=fs_ops.root}
 
   | `Finished_no_slash c,s -> 
@@ -188,7 +187,7 @@ actually passed to fs_ops to resolve
       monad_ops.return @@ `Missing_slash(c,s)
 
 let _ : 
-monad_ops:'a Tjr_monad.Monad.monad_ops ->fs_ops:('b, 'c, 'a) Fs_ops.fs_ops ->
+monad_ops:'a monad_ops ->fs_ops:('b, 'c, 'a) Fs_ops.fs_ops ->
 'c state ->
 ([> `Error of
       [> `File_followed_by_slash_etc of 'c state * Path_component.comp_ * 'b ]
@@ -198,7 +197,7 @@ monad_ops:'a Tjr_monad.Monad.monad_ops ->fs_ops:('b, 'c, 'a) Fs_ops.fs_ops ->
   | `Missing_slash of Path_component.comp_ * 'c state
   | `Ok of 'c state ],
  'a)
-Tjr_monad.Monad.m
+m
 = step
 
 
