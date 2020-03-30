@@ -1,6 +1,7 @@
 (* test ------------------------------------------------------------ *)
 
 open Tjr_path_resolution
+open Tjr_path_resolution.Intf
 
 type file_id = Private_file_id of string
 type dir_id = Private_dir_id of string
@@ -29,7 +30,7 @@ let _ = Unix.chdir root
 let monad_ops = imperative_monad_ops
 open Tjr_monad.Imperative
 
-let fs_ops = Fs_ops.{
+let fs_ops = {
   root = Private_dir_id root;
   resolve_comp = (
     fun did c -> monad_ops.return @@
@@ -53,7 +54,7 @@ let fs_ops = Fs_ops.{
 
 let cwd = Private_dir_id root
 
-let resolve s = resolve_butlast ~monad_ops ~fs_ops ~cwd s |> Imperative.of_m
+let resolve s = Path_resolution.resolve_butlast ~monad_ops ~fs_ops ~cwd s |> Imperative.of_m
 
 ;;
 let r1 = resolve "/a/b.txt";;
@@ -75,7 +76,7 @@ let _ =
 (* resolve' --------------------------------------------------------- *)
 
 let resolve s = 
-  resolve' ~monad_ops ~fs_ops ~follow_last_symlink:`Always ~cwd s |> of_m
+  Path_resolution.resolve' ~monad_ops ~fs_ops ~follow_last_symlink:`Always ~cwd s |> of_m
 
 let r1 = resolve "/"
 
@@ -88,7 +89,7 @@ let _ =
 (* resolve_simplified ----------------------------------------------- *)
 
 let resolve s = 
-  resolve_simplified ~monad_ops ~fs_ops ~follow_last_symlink:`Always ~cwd s |> of_m
+  Path_resolution.resolve_simplified ~monad_ops ~fs_ops ~follow_last_symlink:`Always ~cwd s |> of_m
 
 let dest_Ok = function
   | Ok x -> x

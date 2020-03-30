@@ -50,27 +50,12 @@ TODO:
 
 *)
 
-
+open Intf
 open String_util
-open Path_component
-open Fs_ops
+(* open Path_component *)
+(* open Fs_ops *)
 
 (* path resolution -------------------------------------------------- *)
-
-(* 
-
-During path resolution we maintain a state:
-- cwd, the current directory
-- is_absolute, whether we are working with an absolute path
-- path, the path itself, as a string (but without a leading slash,
-  which is dealt with by is_absolute)
-
-*)
-type 'dir_id state = {
-  cwd: 'dir_id;
-  is_absolute: bool;
-  path: string;  
-}
 
 
 (* whether the state is "finished"; if is_absolute, then we can do
@@ -187,14 +172,14 @@ actually passed to fs_ops to resolve
       monad_ops.return @@ `Missing_slash(c,s)
 
 let _ : 
-monad_ops:'a monad_ops ->fs_ops:('b, 'c, 'a) Fs_ops.fs_ops ->
+monad_ops:'a monad_ops ->fs_ops:('b, 'c, 'a) fs_ops ->
 'c state ->
 ([> `Error of
-      [> `File_followed_by_slash_etc of 'c state * Path_component.comp_ * 'b ]
+      [> `File_followed_by_slash_etc of 'c state * comp_ * 'b ]
  | `Finished_root
-  | `Finished_no_slash of Path_component.comp_ * 'c  (* maybe symlink *)
-  | `Finished_slash of Path_component.comp_ * 'c  (* maybe symlink *)
-  | `Missing_slash of Path_component.comp_ * 'c state
+  | `Finished_no_slash of comp_ * 'c  (* maybe symlink *)
+  | `Finished_slash of comp_ * 'c  (* maybe symlink *)
+  | `Missing_slash of comp_ * 'c state
   | `Ok of 'c state ],
  'a)
 m
@@ -250,9 +235,6 @@ behaviour
 
 *)
 
-
-(* NOTE make this polyvar so we don't have to open a module *)
-type follow_last_symlink = [ `Always | `If_trailing_slash | `Never ]
 
 
 let resolve' ~monad_ops ~fs_ops ~follow_last_symlink ~cwd = 
@@ -340,24 +322,13 @@ string ->
 
 (* the above has a lot of cases; we pick out some commonalities to
    simplify subsequent case splitting *)
-
-module Simplified_result = struct
-
-
-  type ('file_id,'dir_id) simplified_result' = File of 'file_id | Dir of 'dir_id | Sym of string | Missing
-  type ('file_id,'dir_id) simplified_result = 
-    { parent_id: 'dir_id; comp: comp_; result: ('file_id,'dir_id) simplified_result'; trailing_slash:bool }
-
-  (* a "special" result for root *)
-  (* FIXME there is a question here about what to do exactly for root; hopefully the following will suffice *)
-  let simplified_result_root ~fs_ops =
-    let root = fs_ops.root in
-    { parent_id=root; comp=""; result=(Dir root); trailing_slash=false}
-
-end
-include Simplified_result
-
   
+(** a "special" result for root *)
+(* FIXME there is a question here about what to do exactly for root;
+   hopefully the following will suffice *)
+let simplified_result_root ~fs_ops =
+  let root = fs_ops.root in
+  { parent_id=root; comp=""; result=(Dir root); trailing_slash=false}
 
 let resolve_simplified ~monad_ops ~fs_ops ~follow_last_symlink ~cwd s = 
   let ( >>= ) = monad_ops.bind in
@@ -434,10 +405,7 @@ fs_ops:('file_id,'dir_id,'t) fs_ops ->
 follow_last_symlink:follow_last_symlink ->
 cwd:'dir_id ->
 string ->
-((('file_id,'dir_id) Simplified_result.simplified_result,
- [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id  (* FIXME clarify further? *)
-  | `Missing_slash_etc of comp_ * 'dir_id * string ]) result,
- 't) m
+( ('file_id,'dir_id) resolved_path_or_err, 't) m
 = resolve_simplified
 
 let resolve = resolve_simplified
