@@ -6,7 +6,7 @@
 (maintainers          "Tom Ridge <tom.j.ridge@googlemail.com>")
 (source               (github tomjridge/path_resolution))
 (homepage             https://github.com/tomjridge/path_resolution)
-(documentation        https://tomjridge.github.io/path_resolution)
+(documentation        https://tomjridge.github.io/ocamldocs)
 (generate_opam_files  true)
 
 
