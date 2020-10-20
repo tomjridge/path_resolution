@@ -4,7 +4,7 @@ synopsis: "Abstract path resolution (part of ImpFS, or usable independently)"
 maintainer: ["Tom Ridge <tom.j.ridge@googlemail.com>"]
 authors: ["Tom Ridge <tom.j.ridge@googlemail.com>"]
 homepage: "https://github.com/tomjridge/path_resolution"
-doc: "https://tomjridge.github.io/path_resolution"
+doc: "https://tomjridge.github.io/ocamldocs"
 bug-reports: "https://github.com/tomjridge/path_resolution/issues"
 depends: [
   "dune" {>= "2.0"}
