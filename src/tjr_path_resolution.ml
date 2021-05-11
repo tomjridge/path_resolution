@@ -1,37 +1,38 @@
-(** Path resolution; safe to open *)
+(** Path resolution; don't open - comp_ is alised to string *)
 
 module String_util = String_util
+
 module Intf = Intf
-open Intf
-
-type follow_last_symlink = Intf.follow_last_symlink
-
-type ('fid,'did,'sid)resolved_path_or_err = ('fid,'did,'sid)Intf.resolved_path_or_err
+include Intf.Public
 
 module Path_resolution = Path_resolution
+
+type ('fid,'did,'sid,'t) resolve_t = 
+  follow_last_symlink:follow_last_symlink ->
+  cwd:'did ->
+  comp_ ->
+  ( ('fid,'did,'sid)resolved_path_or_err, 't) m
+(** 
+Core type of the resolve function
+{[
+  follow_last_symlink:follow_last_symlink ->
+  cwd:'did ->
+  comp_ ->
+  ( ('fid,'did,'sid)resolved_path_or_err, 't) m
+]} *)
 
 let resolve : 
   monad_ops:'t monad_ops ->
   fs_ops:('fid, 'did, 'sid, 't) fs_ops ->
-  follow_last_symlink:follow_last_symlink ->
-  cwd:'did ->
-  comp_ ->
-  ((('fid, 'did, 'sid) simplified_result,
-    [> `File_followed_by_slash_etc of 'did state * comp_ * 'fid
-    | `Missing_slash_etc of comp_ * 'did * comp_ ])
-     result, 't)
-    m
+  ('fid,'did,'sid,'t)resolve_t
   = Path_resolution.resolve
-(** {[
+(** 
+The resolve function provided by this library, parameterized by
+the monad and the underlying filesystem operations
+
+{[
   monad_ops:'t monad_ops ->
   fs_ops:('fid, 'did, 'sid, 't) fs_ops ->
-  follow_last_symlink:follow_last_symlink ->
-  cwd:'did ->
-  comp_ ->
-  ((('fid, 'did, 'sid) simplified_result,
-    [> `File_followed_by_slash_etc of 'did state * comp_ * 'fid
-    | `Missing_slash_etc of comp_ * 'did * comp_ ])
-     result, 't)
-    m
+  ('fid,'did,'sid,'t)resolve_t
 ]} *)
 
