@@ -88,7 +88,7 @@ let state_from_symlink ~cwd ~symlink_contents ~path =
 
 
 (* Get the next component of the path. This function deals with strings, not state *)
-let get_next_comp s = 
+let get_next_comp (s:_ state) = 
   assert (not (is_finished s));
   match s.is_absolute with
   | true -> 
