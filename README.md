@@ -28,7 +28,7 @@ NOTE this installs a package `tjr_path_resolution` into `ocamlfind/opam`
 
 For documentation, please read the ocamldoc or the source code.
 
-The ocamldoc is here: <https://tomjridge.github.io/path_resolution/docs>
+* OCamldocs at <https://tomjridge.github.io/ocamldocs/> (includes main management page)
 
 
 

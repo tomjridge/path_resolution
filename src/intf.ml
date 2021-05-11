@@ -1,56 +1,34 @@
-(** Main types; probably don't open *)
+(** Main types; don't open - comp_ is aliased to string *)
 
-(* path components -------------------------------------------------- *)
-
-
-(* path_component is a bit lengthy, so call it comp_ *)
+(** Path components *)
 type comp_ = string (* with no slash FIXME enforced? *)
 
-
-(* 
-
-NOTE the following two types are really private - they can be ints
-or whathaveyou; for the purposes of easy testing, they are
-strings 
-
-To avoid functorization, we use type vars
-
-*)
-(*
-type file_id = Private_file_id of string
-type dir_id = Private_dir_id of string
-*)
-
-type ('file_id,'dir_id) resolved_comp = 
-  | RC_file of 'file_id | RC_dir of 'dir_id | RC_sym of string | RC_missing 
+(** fid - file id; did - dir id; sid - symlink id *)
+type ('fid,'did,'sid) resolved_comp = 
+  | RC_file of 'fid | RC_dir of 'did | RC_sym of 'sid*string | RC_missing 
 
 
-(* FIXME maybe rename this to dir_lookup or similar *)
 (** Operations we require from the underlying filesystem; essentially
    we need to be able to look up a component in a directory *)
-type ('file_id,'dir_id,'t) fs_ops = {
-  root: 'dir_id;
-  resolve_comp: 'dir_id -> comp_ -> (('file_id,'dir_id) resolved_comp,'t) m
+type ('fid,'did,'sid,'t) fs_ops = {
+  root: 'did;
+  resolve_comp: 'did -> comp_ -> (('fid,'did,'sid) resolved_comp,'t) m
 }
 
-(** The result of path resolution (simplified to reduce complexity) *)
-module Simplified_result = struct
+(** The result of path resolution (simplified to reduce complexity). A
+   "successful" resolution gives one of the following *)
+type ('fid,'did,'sid) simplified_result' = 
+    File of 'fid | Dir of 'did | Sym of 'sid*string | Missing
 
-  (** A "successful" resolution gives one of the following *)
-  type ('file_id,'dir_id) simplified_result' = 
-      File of 'file_id | Dir of 'dir_id | Sym of string | Missing
-
-  (** We also need additional information about the resolved result,
-     such as the containing directory, the last path component, and
-     whether there was a trailing slash on the path *)
-  type ('file_id,'dir_id) simplified_result = { 
-    parent_id: 'dir_id; 
-    comp: comp_; 
-    result: ('file_id,'dir_id) simplified_result'; 
-    trailing_slash:bool 
-  }
-end
-include Simplified_result
+(** We also need additional information about the resolved result,
+    such as the containing directory, the last path component, and
+    whether there was a trailing slash on the path *)
+type ('fid,'did,'sid) simplified_result = { 
+  parent_id      : 'did; 
+  comp           : comp_; 
+  result         : ('fid,'did,'sid) simplified_result'; 
+  trailing_slash : bool 
+}
 
 
 (* NOTE make this polyvar so we don't have to open a module *)
@@ -66,21 +44,19 @@ type follow_last_symlink = [ `Always | `If_trailing_slash | `Never ]
   which is dealt with by is_absolute)
 
 *)
-type 'dir_id state = {
-  cwd: 'dir_id;
-  is_absolute: bool;
-  path: string;  
+type 'did state = {
+  cwd         : 'did;
+  is_absolute : bool;
+  path        : string;  
 }
 
-
-type ('file_id,'dir_id) resolved_err = [ 
+type ('fid,'did) resolved_err = [ 
   (* FIXME clarify further? *)
-  | `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id 
+  | `File_followed_by_slash_etc of 'did state * comp_ * 'fid 
                                     
-  | `Missing_slash_etc of comp_ * 'dir_id * string ]
+  | `Missing_slash_etc of comp_ * 'did * string ]
 
-type ('file_id,'dir_id) resolved_path_or_err = 
-  (('file_id,'dir_id) Simplified_result.simplified_result,
-   ('file_id,'dir_id) resolved_err) 
+type ('fid,'did,'sid) resolved_path_or_err = 
+  (('fid,'did,'sid) simplified_result,
+   ('fid,'did) resolved_err) 
     result
-

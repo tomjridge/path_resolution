@@ -6,24 +6,32 @@ open Intf
 
 type follow_last_symlink = Intf.follow_last_symlink
 
-type ('file_id,'dir_id)resolved_path_or_err = ('file_id,'dir_id)Intf.resolved_path_or_err
+type ('fid,'did,'sid)resolved_path_or_err = ('fid,'did,'sid)Intf.resolved_path_or_err
 
 module Path_resolution = Path_resolution
 
 let resolve : 
-monad_ops           : 't monad_ops ->
-fs_ops              : ('file_id,'dir_id,'t) fs_ops ->
-follow_last_symlink : follow_last_symlink ->
-cwd                 : 'dir_id ->
-string ->
-( ('file_id,'dir_id) resolved_path_or_err, 't) m
-= Path_resolution.resolve
+  monad_ops:'t monad_ops ->
+  fs_ops:('fid, 'did, 'sid, 't) fs_ops ->
+  follow_last_symlink:follow_last_symlink ->
+  cwd:'did ->
+  comp_ ->
+  ((('fid, 'did, 'sid) simplified_result,
+    [> `File_followed_by_slash_etc of 'did state * comp_ * 'fid
+    | `Missing_slash_etc of comp_ * 'did * comp_ ])
+     result, 't)
+    m
+  = Path_resolution.resolve
 (** {[
-monad_ops           : 't monad_ops ->
-fs_ops              : ('file_id,'dir_id,'t) fs_ops ->
-follow_last_symlink : follow_last_symlink ->
-cwd                 : 'dir_id ->
-string ->
-( ('file_id,'dir_id) resolved_path_or_err, 't) m
+  monad_ops:'t monad_ops ->
+  fs_ops:('fid, 'did, 'sid, 't) fs_ops ->
+  follow_last_symlink:follow_last_symlink ->
+  cwd:'did ->
+  comp_ ->
+  ((('fid, 'did, 'sid) simplified_result,
+    [> `File_followed_by_slash_etc of 'did state * comp_ * 'fid
+    | `Missing_slash_etc of comp_ * 'did * comp_ ])
+     result, 't)
+    m
 ]} *)
 

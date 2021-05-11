@@ -13,6 +13,4 @@
 (package 
  (name tjr_path_resolution)
  (synopsis "Abstract path resolution (part of ImpFS, or usable independently)")
- (depends 
-   tjr_monad
-   tjr_fs_shared))
+ (depends tjr_fs_shared))

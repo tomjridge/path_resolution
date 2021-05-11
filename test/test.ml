@@ -48,7 +48,7 @@ let fs_ops = {
             (* FIXME we need to canonicalize paths, but OCaml lacks a
                native way to do this *)
             RC_dir (Private_dir_id (realpath path)) 
-          | S_LNK -> RC_sym (readlink path)
+          | S_LNK -> RC_sym ((),readlink path)
           | _ -> failwith "unrecognized type")
 }
 

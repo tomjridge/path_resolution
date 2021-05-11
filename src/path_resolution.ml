@@ -1,9 +1,9 @@
-(* Simple prototype of a path resolution algorithm ------------------- *)
+(** Path resolution algorithm *)
 
 (* NOTE root is special! Not to be confused with '/' appearing inside
    a path *)
 
-(* 
+(** 
 
 The SibylFS spec contains a description of path resolution,
 parameterized for all the crazy behavioural differences (especially on
@@ -52,10 +52,6 @@ TODO:
 
 open Intf
 open String_util
-(* open Path_component *)
-(* open Fs_ops *)
-
-(* path resolution -------------------------------------------------- *)
 
 
 (* whether the state is "finished"; if is_absolute, then we can do
@@ -100,7 +96,7 @@ let get_next_comp s =
     if is_finished s 
     then `Root_finished,s
     else `Root_unfinished,s
-                   
+
   | false ->
     (* we know that path <> "" *)
     assert(s.path <> "");
@@ -115,23 +111,23 @@ let _ = get_next_comp
 
 (* Step the path resolution state. This function interacts with the
    fs. *)
-let step ~monad_ops ~fs_ops s =
-  let ( >>= ) = monad_ops.bind in
+let step ~monad_ops:{return;bind} ~fs_ops s =
+  let ( >>= ) = bind in
   (* get the next path component *)
   s |> get_next_comp |> function
 
-  | `Root_finished,_s -> monad_ops.return @@ `Finished_root
-  | `Root_unfinished,s -> monad_ops.return @@ `Ok {s with cwd=fs_ops.root}
+  | `Root_finished,_s -> return @@ `Finished_root
+  | `Root_unfinished,s -> return @@ `Ok {s with cwd=fs_ops.root}
 
   | `Finished_no_slash c,s -> 
     (* No more path components left. It may be that the current
        component refers to a symlink, in which case we need to do more
        processing. This is dealt with elsewhere. *)
-    monad_ops.return @@ `Finished_no_slash (c,s.cwd)  
+    return @@ `Finished_no_slash (c,s.cwd)  
 
   | `Finished_slash c,s -> 
     (* Again, c may be a symlink *)
-    monad_ops.return @@ `Finished_slash (c,s.cwd)
+    return @@ `Finished_slash (c,s.cwd)
 
   | `Comp_with_slash c,s -> 
     (* 
@@ -155,51 +151,52 @@ actually passed to fs_ops to resolve
          actually treated as valid on some platforms, especially if
          f.txt is a symlink to a file, so that the trailing slash
          means "follow symlink" FIXME add a flag for this *)
-      monad_ops.return @@ `Error (`File_followed_by_slash_etc (s,c,fid))
+      return @@ `Error (`File_followed_by_slash_etc (s,c,fid))
 
-    | RC_dir d -> monad_ops.return @@ `Ok {s with cwd=d}
+    | RC_dir d -> return @@ `Ok {s with cwd=d}
 
-    | RC_sym str -> (
+    | RC_sym (_sid,str) -> (
         (* We have something like symlink// or symlink/x/y/z; in the
            first case, we force the follow of the symlink FIXME some
            platforms do not do this, so parameterize *)
-        monad_ops.return @@ `Ok (state_from_symlink ~cwd:s.cwd ~symlink_contents:str ~path:s.path))
+        return @@ `Ok (state_from_symlink ~cwd:s.cwd ~symlink_contents:str ~path:s.path))
     | RC_missing -> 
       (* NOTE missing/ is ok if the target is a missing directory *)
       (* This may or may not be valid. So return all that we know at
          this point; path may be empty, or eg "///" so this could be a
          valid path *)
-      monad_ops.return @@ `Missing_slash(c,s)
+      return @@ `Missing_slash(c,s)
 
 let _ : 
-monad_ops:'a monad_ops ->fs_ops:('b, 'c, 'a) fs_ops ->
-'c state ->
-([> `Error of
-      [> `File_followed_by_slash_etc of 'c state * comp_ * 'b ]
- | `Finished_root
-  | `Finished_no_slash of comp_ * 'c  (* maybe symlink *)
-  | `Finished_slash of comp_ * 'c  (* maybe symlink *)
-  | `Missing_slash of comp_ * 'c state
-  | `Ok of 'c state ],
- 'a)
-m
-= step
+  monad_ops:'a monad_ops ->fs_ops:('b, 'c, 'd, 'a) fs_ops ->
+  'c state ->
+  ([> `Error of
+        [> `File_followed_by_slash_etc of 'c state * comp_ * 'b ]
+   | `Finished_root
+   | `Finished_no_slash of comp_ * 'c  (* maybe symlink *)
+   | `Finished_slash of comp_ * 'c  (* maybe symlink *)
+   | `Missing_slash of comp_ * 'c state
+   | `Ok of 'c state ],
+   'a)
+    m
+  = step
 
 
-(* Resolve all but the last component; not used by the main `resolve`
-   function *)
+(** Resolve all but the last component; not used by the main `resolve`
+    function *)
 let resolve_butlast ~monad_ops ~fs_ops ~cwd = 
-  let ( >>= ) = monad_ops.bind in
+  let {return;bind} = monad_ops in
+  let ( >>= ) = bind in
   let step = step ~monad_ops ~fs_ops in
   let rec f s = 
     assert (not (is_finished s));
     step s >>= function
     | `Ok s -> f s
-    | `Finished_root -> monad_ops.return @@ `Finished_root
-    | `Finished_no_slash x -> monad_ops.return @@ `Finished_no_slash x
-    | `Finished_slash x -> monad_ops.return @@ `Finished_slash x
-    | `Error e -> monad_ops.return @@ `Error e
-    | `Missing_slash x -> monad_ops.return @@ `Missing_slash x
+    | `Finished_root       -> return @@ `Finished_root
+    | `Finished_no_slash x -> return @@ `Finished_no_slash x
+    | `Finished_slash x    -> return @@ `Finished_slash x
+    | `Error e             -> return @@ `Error e
+    | `Missing_slash x     -> return @@ `Missing_slash x
   in  
   fun s ->
     match strip_leading_slash s with
@@ -211,15 +208,15 @@ let resolve_butlast ~monad_ops ~fs_ops ~cwd =
    etc can be done as another step *)
 let _ : 
   monad_ops: 't monad_ops ->
-  fs_ops: ('file_id,'dir_id,'t) fs_ops -> cwd:'dir_id -> string ->
-  ([> `Error of [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id ]
+  fs_ops: ('fid,'did,'sid,'t) fs_ops -> cwd:'did -> string ->
+  ([> `Error of [> `File_followed_by_slash_etc of 'did state * comp_ * 'fid ]
    | `Finished_root
-  | `Finished_no_slash of comp_ * 'dir_id
-  | `Finished_slash of comp_ * 'dir_id
-  | `Missing_slash of comp_ * 'dir_id state ],
+   | `Finished_no_slash of comp_ * 'did
+   | `Finished_slash of comp_ * 'did
+   | `Missing_slash of comp_ * 'did state ],
    't)m
   = resolve_butlast
-
+    
 ;;
 
 (* 
@@ -237,42 +234,43 @@ behaviour
 
 
 
-let resolve' ~monad_ops ~fs_ops ~follow_last_symlink ~cwd = 
-  let ( >>= ) = monad_ops.bind in
+let resolve' ~monad_ops ~fs_ops ~(follow_last_symlink:follow_last_symlink) ~cwd = 
+  let { return; bind } = monad_ops in
+  let ( >>= ) = bind in
   let step = step ~monad_ops ~fs_ops in
   let rec f s = 
     assert (not (is_finished s));
     step s >>= function
     | `Ok s -> f s
 
-    | `Finished_root -> monad_ops.return `Finished_root
+    | `Finished_root -> return `Finished_root
 
     | `Finished_no_slash (comp,dir) -> (
         (* Cases where there is no trailing slash *)
         fs_ops.resolve_comp dir comp >>= function
-        | RC_file fid -> monad_ops.return @@ `Finished_no_slash_file (dir,comp,fid)
-        | RC_dir d -> monad_ops.return @@ `Finished_no_slash_dir (dir,comp,d)
-        | RC_sym str -> (
+        | RC_file fid -> return @@ `Finished_no_slash_file (dir,comp,fid)
+        | RC_dir d -> return @@ `Finished_no_slash_dir (dir,comp,d)
+        | RC_sym (sid,str) -> (
             (* A symlink *without* a trailing slash *)
             match follow_last_symlink with
             | `Always ->
               state_from_symlink ~cwd:dir ~symlink_contents:str ~path:"" |> f
             | _ -> 
-              monad_ops.return @@ `Finished_no_slash_symlink (dir,comp,str))
-        | RC_missing -> monad_ops.return @@ `Missing_finished_no_slash(dir,comp))
+              return @@ `Finished_no_slash_symlink (dir,comp,sid,str))
+        | RC_missing -> return @@ `Missing_finished_no_slash(dir,comp))
 
     | `Finished_slash (comp,dir) -> (
         (* Cases where there is a trailing slash *)
         fs_ops.resolve_comp dir comp >>= function
         | RC_file fid -> 
           (* NOTE potentially an error *)
-          monad_ops.return @@ `Finished_slash_file (dir,comp,fid)
+          return @@ `Finished_slash_file (dir,comp,fid)
 
         | RC_dir d -> 
           (* Never (?) an error *)
-          monad_ops.return @@ `Finished_slash_dir (dir,comp,d)
+          return @@ `Finished_slash_dir (dir,comp,d)
 
-        | RC_sym str -> (
+        | RC_sym (_sid,str) -> (
             (* NOTE there is a trailing slash; FIXME the following
                line doesn't hold on all platforms; parameterize *)
             match follow_last_symlink with
@@ -284,15 +282,15 @@ let resolve' ~monad_ops ~fs_ops ~follow_last_symlink ~cwd =
               (* `Finished_slash_symlink (dir,comp,str) *)
               failwith "impossible at the moment"  (* FIXME? *))
 
-        | RC_missing -> monad_ops.return @@ `Missing_finished_slash(dir,comp))
+        | RC_missing -> return @@ `Missing_finished_slash(dir,comp))
 
-    | `Error e -> monad_ops.return @@ `Error e
+    | `Error e -> return @@ `Error e
 
     | `Missing_slash (comp,s) -> 
       (* NOTE that there may well be further stuff to resolve in
          s.path, likely indicating an error; this is dealt with
          later *)
-      monad_ops.return @@ `Missing_slash (comp,s)
+      return @@ `Missing_slash (comp,s)
   in  
   fun s ->
     match strip_leading_slash s with
@@ -300,29 +298,29 @@ let resolve' ~monad_ops ~fs_ops ~follow_last_symlink ~cwd =
     | Some path -> f { cwd; is_absolute=true; path }
 
 let _ : 
-monad_ops: 't monad_ops ->
-fs_ops: ('file_id,'dir_id,'t) fs_ops ->
-follow_last_symlink:follow_last_symlink ->
-cwd:'dir_id ->
-string ->
-([> `Error of [> `File_followed_by_slash_etc of 'dir_id state * comp_ * 'file_id ]
- | `Finished_root
- | `Finished_no_slash_dir of 'dir_id * comp_ * 'dir_id
- | `Finished_no_slash_file of 'dir_id * comp_ * 'file_id
- | `Finished_no_slash_symlink of 'dir_id * comp_ * string
- | `Finished_slash_dir of 'dir_id * comp_ * 'dir_id
- | `Finished_slash_file of 'dir_id * comp_ * 'file_id
- | `Finished_slash_symlink of 'dir_id * comp_ * string
- | `Missing_slash of comp_ * 'dir_id state
- | `Missing_finished_no_slash of 'dir_id * comp_
- | `Missing_finished_slash of 'dir_id * comp_ ],
- 't) m
-= resolve'
+  monad_ops:'a monad_ops ->
+  fs_ops:('b, 'c, 'd, 'a) fs_ops ->
+  follow_last_symlink:follow_last_symlink ->
+  cwd:'c ->
+  comp_ ->
+  ([> `Error of [> `File_followed_by_slash_etc of 'c state * comp_ * 'b ]
+   | `Finished_no_slash_dir of 'c * comp_ * 'c
+   | `Finished_no_slash_file of 'c * comp_ * 'b
+   | `Finished_no_slash_symlink of 'c * comp_ * 'd * comp_
+   | `Finished_root
+   | `Finished_slash_dir of 'c * comp_ * 'c
+   | `Finished_slash_file of 'c * comp_ * 'b
+   | `Missing_finished_no_slash of 'c * comp_
+   | `Missing_finished_slash of 'c * comp_
+   | `Missing_slash of comp_ * 'c state ],
+   'a)
+    m
+  = resolve'
 
 
 (* the above has a lot of cases; we pick out some commonalities to
    simplify subsequent case splitting *)
-  
+
 (** a "special" result for root *)
 (* FIXME there is a question here about what to do exactly for root;
    hopefully the following will suffice *)
@@ -330,38 +328,37 @@ let simplified_result_root ~fs_ops =
   let root = fs_ops.root in
   { parent_id=root; comp=""; result=(Dir root); trailing_slash=false}
 
-let resolve_simplified ~monad_ops ~fs_ops ~follow_last_symlink ~cwd s = 
-  let ( >>= ) = monad_ops.bind in
+let resolve_simplified ~monad_ops ~fs_ops ~(follow_last_symlink:follow_last_symlink) ~cwd s = 
+  let { return;bind } = monad_ops in
+  let ( >>= ) = bind in
   resolve' ~monad_ops ~fs_ops ~follow_last_symlink ~cwd s >>= function
-  | `Error e -> monad_ops.return @@ Error e
+  | `Error e -> return @@ Error e
 
-  | `Finished_root -> monad_ops.return @@ Ok (simplified_result_root ~fs_ops)
+  | `Finished_root -> return @@ Ok (simplified_result_root ~fs_ops)
 
-  | `Finished_no_slash_dir (parent_id,comp,did) -> monad_ops.return @@ Ok Simplified_result.{ 
-      parent_id; comp; result=(Dir did); trailing_slash=false }
+  | `Finished_no_slash_dir (parent_id,comp,did) -> 
+    return @@ Ok { parent_id; comp; result=(Dir did); trailing_slash=false }
 
- | `Finished_no_slash_file (parent_id,comp,fid) -> monad_ops.return @@ Ok Simplified_result.{
-      parent_id; comp; result=(File fid); trailing_slash=false }       
+  | `Finished_no_slash_file (parent_id,comp,fid) -> 
+    return @@ Ok {parent_id; comp; result=(File fid); trailing_slash=false }       
 
- | `Finished_no_slash_symlink (parent_id,comp,str) -> monad_ops.return @@ Ok Simplified_result.{
-     parent_id; comp; result=(Sym str); trailing_slash=false }       
+  | `Finished_no_slash_symlink (parent_id,comp,sid,str) -> 
+    return @@ Ok {parent_id; comp; result=(Sym (sid,str)); trailing_slash=false }       
 
- | `Finished_slash_dir (parent_id,comp,did) -> monad_ops.return @@ Ok Simplified_result.{ 
-     parent_id; comp; result=(Dir did); trailing_slash=true }
+  | `Finished_slash_dir (parent_id,comp,did) -> 
+    return @@ Ok { parent_id; comp; result=(Dir did); trailing_slash=true }
 
- | `Finished_slash_file (parent_id,comp,fid) -> 
-   (* NOTE this is often an error FIXME include a further layer to
-      capture these cases? *)
-   monad_ops.return @@ Ok Simplified_result.{
-       parent_id; comp; result=(File fid); trailing_slash=true }
+  | `Finished_slash_file (parent_id,comp,fid) -> 
+    (* NOTE this is often an error FIXME include a further layer to
+       capture these cases? *)
+    return @@ Ok { parent_id; comp; result=(File fid); trailing_slash=true }
 
- | `Finished_slash_symlink (parent_id,comp,str) -> 
-   (* NOTE the trailing slash typically forces the symlink to be
-      followed *)
-   monad_ops.return @@ Ok Simplified_result.{
-       parent_id; comp; result=(Sym str); trailing_slash=true }
+  | `Finished_slash_symlink (parent_id,comp,sid,str) -> 
+    (* NOTE the trailing slash typically forces the symlink to be
+       followed *)
+    return @@ Ok { parent_id; comp; result=(Sym (sid,str)); trailing_slash=true }
 
- | `Missing_slash (comp,s) -> (
+  | `Missing_slash (comp,s) -> (
      (*
 
 We have a missing component followed by further stuff in s.path. 
@@ -374,42 +371,45 @@ NOTE there may be other choices here
 
 *)
 
-   assert(s.is_absolute = false);
-   let remaining = s.path in
-   (* check if all slashes *)
-   match all_slashes remaining with
-   | true -> 
-     (* NOTE the component is missing, and the unprocessed path suffix
-        contains only slashes; typically this would represent a target of
-        a rename of a directory, but some platforms allow this for file
-        renames etc; we return an `Ok`, but be aware that this may be an
-        error with some platforms and some syscalls *)
-     monad_ops.return @@ Ok Simplified_result.{
-       parent_id=s.cwd; comp; result=Missing; trailing_slash=true }
+      assert(s.is_absolute = false);
+      let remaining = s.path in
+      (* check if all slashes *)
+      match all_slashes remaining with
+      | true -> 
+        (* NOTE the component is missing, and the unprocessed path suffix
+           contains only slashes; typically this would represent a target of
+           a rename of a directory, but some platforms allow this for file
+           renames etc; we return an `Ok`, but be aware that this may be an
+           error with some platforms and some syscalls *)
+        return @@ Ok { parent_id=s.cwd; comp; result=Missing; trailing_slash=true }
 
-   | false -> 
-     (* This is an error case eg /a/b/missing/some/more/stuff *)
-     monad_ops.return @@ Error (`Missing_slash_etc (comp,s.cwd,remaining)))
+      | false -> 
+        (* This is an error case eg /a/b/missing/some/more/stuff *)
+        return @@ Error (`Missing_slash_etc (comp,s.cwd,remaining)))
 
- | `Missing_finished_no_slash (parent_id,comp) -> monad_ops.return @@ Ok Simplified_result.{
-     parent_id; comp; result=Missing; trailing_slash=false }
-     
- | `Missing_finished_slash (parent_id,comp) -> monad_ops.return @@ Ok Simplified_result.{
-     parent_id; comp; result=Missing; trailing_slash=false }
+  | `Missing_finished_no_slash (parent_id,comp) -> 
+    return @@ Ok { parent_id; comp; result=Missing; trailing_slash=false }
+
+  | `Missing_finished_slash (parent_id,comp) -> 
+    return @@ Ok { parent_id; comp; result=Missing; trailing_slash=false }
 
 ;;
 
-let _ :
-monad_ops: 't monad_ops ->
-fs_ops:('file_id,'dir_id,'t) fs_ops ->
-follow_last_symlink:follow_last_symlink ->
-cwd:'dir_id ->
-string ->
-( ('file_id,'dir_id) resolved_path_or_err, 't) m
-= resolve_simplified
+let resolve ~(monad_ops:'t monad_ops) ~(fs_ops:('fid,'did,'sid,'t)fs_ops) = 
+  resolve_simplified ~monad_ops ~fs_ops
 
-let resolve = resolve_simplified
-
+let _ : 
+  monad_ops:'t monad_ops ->
+  fs_ops:('fid, 'did, 'sid, 't) fs_ops ->
+  follow_last_symlink:follow_last_symlink ->
+  cwd:'did ->
+  comp_ ->
+  ((('fid, 'did, 'sid) simplified_result,
+    [> `File_followed_by_slash_etc of 'did state * comp_ * 'fid
+    | `Missing_slash_etc of comp_ * 'did * comp_ ])
+     result, 't)
+    m  
+  = resolve
 ;;
 
 
