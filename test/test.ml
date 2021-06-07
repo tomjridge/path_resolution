@@ -6,7 +6,7 @@ open Tjr_path_resolution.Intf
 type file_id = Private_file_id of string
 type dir_id = Private_dir_id of string
 
-let realpath = ExtUnixAll.realpath
+let realpath = ExtUnix.All.realpath
 
 let old_cwd = Unix.getcwd()
 
